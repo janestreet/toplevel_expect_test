@@ -1,0 +1,17 @@
+version = "$(pkg_version)"
+description = "Expectation tests for the OCaml toplevel"
+requires = "bin_prot core_kernel fieldslib ppx_assert.runtime-lib ppx_bench.runtime-lib ppx_core ppx_driver ppx_expect.collector ppx_expect.common ppx_expect.matcher ppx_expect.payload ppx_here.expander ppx_inline_test.runtime-lib sexplib toplevel_expect_test.glue typerep variantslib"
+archive(byte          ) = "toplevel_expect_test.cma"
+archive(native        ) = "toplevel_expect_test.cmxa"
+archive(native, plugin) = "toplevel_expect_test.cmxs"
+exists_if = "toplevel_expect_test.cma"
+
+package "glue" (
+  version = "$(pkg_version)"
+  description = ""
+  requires = "bin_prot compiler-libs.toplevel fieldslib findlib ppx_assert.runtime-lib ppx_bench.runtime-lib ppx_expect.collector ppx_inline_test.runtime-lib sexplib typerep variantslib"
+  archive(byte          ) = "toplevel_expect_test_glue.cma"
+  archive(native        ) = "toplevel_expect_test_glue.cmxa"
+  archive(native, plugin) = "toplevel_expect_test_glue.cmxs"
+  exists_if = "toplevel_expect_test_glue.cma"
+)
