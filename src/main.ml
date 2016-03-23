@@ -286,23 +286,6 @@ let process_expect_file fname ~use_color =
     true
 ;;
 
-let liblinks =
-  let rec loop dir =
-    let liblinks = Filename.concat dir ".liblinks" in
-    if Sys.file_exists liblinks && Sys.is_directory liblinks then
-      liblinks
-    else
-      let parent = Filename.dirname dir in
-      if dir = "/" || parent = dir then begin
-        eprintf "%s be executed inside the mercurial repository it was built for!"
-          Sys.executable_name;
-        exit 1
-      end;
-      loop parent
-  in
-  loop (Sys.getcwd ())
-;;
-
 let override_sys_argv args =
   let len = Array.length args in
   assert (len <= Array.length Sys.argv);
