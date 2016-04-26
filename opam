@@ -16,6 +16,7 @@ depends: [
   "bin_prot"
   "core_kernel"
   "fieldslib"
+  "js-build-tools"  {build}
   "ocamlfind"       {>= "1.3.2"}
   "ppx_assert"
   "ppx_bench"

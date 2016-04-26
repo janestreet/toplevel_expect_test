@@ -65,7 +65,7 @@ success
 *Warning:* be sure to write `[%%expect]` with 2 percent signs
 
 Note that you can use whatever directives you use in the toplevel:
-`#load`, `#ppx`, ...
+`#load`, `#use`, ...
 
 Matching
 --------
@@ -137,6 +137,46 @@ __LINE__
 Whatever the value of [n] is, the line number of `__LINE__` will
 always be 1.
 
+Producing a structured document
+-------------------------------
+
+Instead of the normal mode, you can ask the toplevel to produce a
+structured document containing a list of code blocks with the toplevel
+response.
+
+This is useful when you want to include some code examples with their
+output in a document. For that pass the flag `-sexp`:
+
+```
+$ cat test.ml
+#verbose true;;
+
+let x = 42
+[%%expect {|
+val x : int = 42
+|}]
+$ ocaml-expect -sexp test.ml
+((parts
+  (((name "")
+    (chunks
+     (((ocaml_code  "#verbose true;;\
+                   \n\
+                   \nlet x = 42\
+                   \n")
+       (toplevel_response  "\
+                          \nval x : int = 42\
+                          \n")))))))
+ (matched false))
+```
+
+You can use the library `toplevel_expect_test.types` to interpret the
+output. You can see the types here
+[here](types/toplevel_expect_test_types.mli).
+
+In addition you can add `[@@@part "blah"]` attributes in your code to
+organize it. This gives you an easy way to split the results in
+different part of the final document.
+
 Building a custom toplevel
 --------------------------
 
@@ -147,3 +187,4 @@ $ echo 'Toplevel_expect_test.Main.main ()` > main.ml
 $ ocamlfind ocamlc -linkpkg -linkall -predicates create_toploop \
     -package toplevel_expect_test -o foo
 ```
+
