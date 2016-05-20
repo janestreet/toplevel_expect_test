@@ -30,7 +30,7 @@ Library toplevel_expect_test
   Modules:      Main
   BuildDepends: bin_prot,
                 compiler-libs.common,
-                compiler-libs.opttoplevel,
+                compiler-libs.toplevel,
                 core_kernel,
                 fieldslib,
                 ppx_assert.runtime-lib,
@@ -56,6 +56,7 @@ Library toplevel_expect_test_glue
                 compiler-libs.toplevel,
                 core_kernel,
                 fieldslib,
+                findlib,
                 ppx_assert.runtime-lib,
                 ppx_bench.runtime-lib,
                 ppx_expect.collector,
