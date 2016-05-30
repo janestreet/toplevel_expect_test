@@ -23,6 +23,7 @@ depends: [
   "ppx_core"
   "ppx_driver"
   "ppx_expect"
+  "ppx_hash"
   "ppx_here"
   "ppx_inline_test"
   "ppx_jane"
