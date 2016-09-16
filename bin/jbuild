@@ -3,3 +3,5 @@
   (public_release ((build_and_install ((main ocaml-expect :mode Bytecode)))))
   (link_executables false)
   (libraries (toplevel_expect_test))))
+
+(provides toplevel_expect_test:main.cmx)
