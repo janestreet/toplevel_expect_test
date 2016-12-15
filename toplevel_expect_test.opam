@@ -6,30 +6,25 @@ bug-reports: "https://github.com/janestreet/toplevel_expect_test/issues"
 dev-repo: "https://github.com/janestreet/toplevel_expect_test.git"
 license: "Apache-2.0"
 build: [
-  ["./configure" "--prefix" prefix]
-  [make]
+  ["jbuilder" "build-package" "toplevel_expect_test" "-j" jobs]
 ]
 depends: [
-  "ocamlbuild"      {build}
-  "oasis"           {build & >= "0.4"}
-  "ocamlfind"       {build & >= "1.3.2"}
-  "bin_prot"
   "core_kernel"
-  "fieldslib"
-  "js-build-tools"  {build}
-  "ocamlfind"       {>= "1.3.2"}
-  "ppx_assert"
-  "ppx_bench"
+  "findlib_top"
+  "jbuilder"
   "ppx_core"
   "ppx_driver"
   "ppx_expect"
-  "ppx_hash"
   "ppx_here"
-  "ppx_inline_test"
   "ppx_jane"
-  "sexplib"
-  "typerep"
-  "variantslib"
+  "base-threads"
 ]
 available: [ ocaml-version >= "4.03.0" ]
-conflicts: [ "oasis" {= "0.4.7"} ]
+descr: "
+Expectation tests for the OCaml toplevel
+
+Allows one to write both toplevel phrases and the expected output from
+the toplevel in the same file. This provides an easy way to test
+compilations errors as well as provide a nice alternative to using
+the toplevel in a terminal.
+"

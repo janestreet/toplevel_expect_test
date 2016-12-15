@@ -1,14 +1,20 @@
 (library
- ((name toplevel_expect_test)
+ ((name        toplevel_expect_test)
   (public_name toplevel_expect_test)
-  (public_release ((libraries (ocamltoplevel :standard \ ocamlopttoplevel))))
-  (libraries (toplevel_expect_test_glue
-              toplevel_expect_test_types
-              ppx_core
-              ppx_driver
-              ppx_expect_payload
-              core_kernel
-              expect_test_common
-              expect_test_matcher
-              ocamlcommon
-              ocamlopttoplevel))))
+  (modes       (byte))
+  (libraries (
+    toplevel_expect_test_types
+    ppx_core
+    ppx_driver
+    ppx_expect.payload
+    ppx_here.expander
+    ppx_driver.print_diff
+    core_kernel
+    ppx_expect.common
+    ppx_expect.matcher
+    compiler-libs.common
+    compiler-libs.toplevel
+    findlib_top
+    threads
+    ))))
+

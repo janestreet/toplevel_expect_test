@@ -1,4 +1,4 @@
-open Toplevel_expect_test_glue.Compiler_modules
+open Backend.Compiler_modules
 open Core_kernel.Std
 open Ppx_core.Std
 open Parsetree
@@ -436,7 +436,7 @@ let process_expect_file fname ~use_color ~in_place ~sexp_output =
         remove_corrected ();
         true
       end else begin
-        Matcher.print_diff () ~file1:fname ~file2:corrected_fname ~use_color
+        Print_diff.print () ~file1:fname ~file2:corrected_fname ~use_color
           ?diff_command:!diff_command;
         false
       end
@@ -493,7 +493,7 @@ let main fname =
   Compmisc.init_path true;
   Toploop.toplevel_env := Compmisc.initial_env ();
   Sys.interactive := false;
-  Toplevel_expect_test_glue.init ();
+  Backend.init ();
   let success =
     process_expect_file fname ~use_color:!use_color ~in_place:!in_place
       ~sexp_output:!sexp_output

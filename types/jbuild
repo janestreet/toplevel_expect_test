@@ -1,6 +1,5 @@
 (library
- ((name toplevel_expect_test_types)
-  (wrapped false)
+ ((name        toplevel_expect_test_types)
   (public_name toplevel_expect_test.types)
-  (public_release ((desc "Types for the output of `ocaml-expect -sexp`")))
+  (synopsis "Types for the output of `ocaml-expect -sexp`")
   (libraries (core_kernel))))

@@ -1,7 +1,11 @@
 (executables
  ((names (main))
-  (public_release ((build_and_install ((main ocaml-expect :mode Bytecode)))))
-  (link_executables false)
+  (link_flags (-linkall))
   (libraries (toplevel_expect_test))))
 
-(provides toplevel_expect_test:main.cmx)
+(provides toplevel_expect_test:main.cmo)
+
+(install
+ ((section bin)
+  (files ((main.bc as ocaml-expect)))))
+
