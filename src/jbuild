@@ -15,6 +15,7 @@
     compiler-libs.common
     compiler-libs.toplevel
     findlib_top
+    unix
     threads
     ))))
 
