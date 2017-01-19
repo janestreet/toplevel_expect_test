@@ -1,7 +1,7 @@
 (library
  ((name        toplevel_expect_test)
   (public_name toplevel_expect_test)
-  (modes       (byte))
+  (modes (byte))
   (libraries (
     toplevel_expect_test_types
     ppx_core
