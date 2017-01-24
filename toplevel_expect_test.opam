@@ -12,6 +12,7 @@ depends: [
   "core_kernel"
   "findlib_top"
   "jbuilder"
+  "ocaml-compiler-libs"
   "ppx_core"
   "ppx_driver"
   "ppx_expect"

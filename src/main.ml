@@ -1,7 +1,6 @@
 open Backend.Compiler_modules
 open Core_kernel.Std
-open Ppx_core.Std
-open Parsetree
+open Ppx_core.Light
 open Expect_test_common.Std
 open Expect_test_matcher.Std
 
@@ -86,8 +85,13 @@ let split_chunks ~fname phrases =
 
 let parse_contents ~fname contents =
   let lexbuf = Lexing.from_string contents in
-  Location.init lexbuf fname;
-  Location.input_name := fname;
+  lexbuf.lex_curr_p <-
+    { pos_fname = fname
+    ; pos_lnum  = 1
+    ; pos_bol   = 0
+    ; pos_cnum  = 0
+    };
+  Ocaml_common.Location.input_name := fname;
   Parse.use_file lexbuf
 ;;
 
@@ -123,7 +127,7 @@ let print_loc ppf (loc : Location.t) =
   Format.fprintf ppf ":@.";
 ;;
 
-let rec error_reporter ppf ({loc; msg; sub; if_highlight=_} : Location.error) =
+let rec error_reporter ppf ({loc; msg; sub; if_highlight=_} : Location.Error.t) =
   print_loc ppf loc;
   Format.pp_print_string ppf msg;
   List.iter sub ~f:(fun err ->
@@ -149,9 +153,9 @@ let protect_vars =
 
 let capture_compiler_stuff ppf ~f =
   protect_vars
-    [ V (Location.formatter_for_warnings , ppf            )
-    ; V (Location.warning_printer        , warning_printer)
-    ; V (Location.error_reporter         , error_reporter )
+    [ V (Ocaml_common.Location.formatter_for_warnings , ppf            )
+    ; V (Ocaml_common.Location.warning_printer        , warning_printer)
+    ; V (Ocaml_common.Location.error_reporter         , error_reporter )
     ]
     ~f
 ;;
@@ -170,7 +174,7 @@ let () =
 
 let shift_line_numbers = object
   inherit [int] Ast_traverse.map_with_context
-  method! lexing_position delta pos =
+  method! position delta pos =
     { pos with pos_lnum  = pos.pos_lnum + delta }
 end
 
@@ -188,9 +192,24 @@ let exec_phrase ppf phrase =
     | n -> shift_line_numbers#toplevel_phrase n phrase
   in
   let phrase = apply_rewriters phrase in
-  if !Clflags.dump_parsetree then Printast. top_phrase ppf phrase;
+  let module Js = Ppx_ast.Selected_ast in
+  let module Ocaml = Migrate_parsetree.Ast_current in
+  let ocaml_phrase : Ocaml.Parsetree.toplevel_phrase =
+    match phrase with
+    | Ptop_def st ->
+      Ptop_def (Js.ast_of_impl st |> Js.to_ocaml_ast |> Ocaml.impl_of_ast)
+    | Ptop_dir (s, arg) ->
+      Ptop_dir (s,
+                match arg with
+                | Pdir_none -> Pdir_none
+                | Pdir_string s -> Pdir_string s
+                | Pdir_int (s, c) -> Pdir_int (s, c)
+                | Pdir_ident id -> Pdir_ident id
+                | Pdir_bool b -> Pdir_bool b)
+  in
+  if !Clflags.dump_parsetree then Printast. top_phrase ppf ocaml_phrase;
   if !Clflags.dump_source    then Pprintast.top_phrase ppf phrase;
-  Toploop.execute_phrase !verbose ppf phrase
+  Toploop.execute_phrase !verbose ppf ocaml_phrase
 ;;
 
 let count_newlines : _ Cst.t Expectation.Body.t -> int =
