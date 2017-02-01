@@ -1,5 +1,5 @@
 open Backend.Compiler_modules
-open Core_kernel.Std
+open Core_kernel
 open Ppx_core.Light
 open Expect_test_common.Std
 open Expect_test_matcher.Std
