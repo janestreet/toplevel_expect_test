@@ -193,20 +193,7 @@ let exec_phrase ppf phrase =
   in
   let phrase = apply_rewriters phrase in
   let module Js = Ppx_ast.Selected_ast in
-  let module Ocaml = Migrate_parsetree.Ast_current in
-  let ocaml_phrase : Ocaml.Parsetree.toplevel_phrase =
-    match phrase with
-    | Ptop_def st ->
-      Ptop_def (Js.ast_of_impl st |> Js.to_ocaml_ast |> Ocaml.impl_of_ast)
-    | Ptop_dir (s, arg) ->
-      Ptop_dir (s,
-                match arg with
-                | Pdir_none -> Pdir_none
-                | Pdir_string s -> Pdir_string s
-                | Pdir_int (s, c) -> Pdir_int (s, c)
-                | Pdir_ident id -> Pdir_ident id
-                | Pdir_bool b -> Pdir_bool b)
-  in
+  let ocaml_phrase = Js.to_ocaml Toplevel_phrase phrase in
   if !Clflags.dump_parsetree then Printast. top_phrase ppf ocaml_phrase;
   if !Clflags.dump_source    then Pprintast.top_phrase ppf phrase;
   Toploop.execute_phrase !verbose ppf ocaml_phrase
