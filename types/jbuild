@@ -3,3 +3,5 @@
   (public_name toplevel_expect_test.types)
   (synopsis "Types for the output of `ocaml-expect -sexp`")
   (libraries (core_kernel))))
+
+(jbuild_version jane_street)

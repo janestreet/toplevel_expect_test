@@ -20,3 +20,5 @@
     threads
     ))))
 
+
+(jbuild_version jane_street)
