@@ -1,13 +1,14 @@
 (executables
  ((names (main))
   (link_flags (-linkall))
-  (libraries (toplevel_expect_test))))
+  (libraries (toplevel_expect_test))
+  (preprocess (pps (ppx_jane)))))
 
-(provides toplevel_expect_test:main.cmo)
+(provides
+ toplevel_expect_test:main.cmo)
 
 (install
  ((section bin)
   (files ((main.bc as ocaml-expect)))))
-
 
 (jbuild_version jane_street)

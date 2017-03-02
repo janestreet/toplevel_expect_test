@@ -14,11 +14,10 @@
     ppx_expect.matcher
     ocaml-compiler-libs.common
     compiler-libs.common
-    compiler-libs.toplevel
-    findlib_top
+    compiler-libs.toplevel findlib_top
     unix
     threads
-    ))))
-
+    ))
+  (preprocess (pps (ppx_jane)))))
 
 (jbuild_version jane_street)

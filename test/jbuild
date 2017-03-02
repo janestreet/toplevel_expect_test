@@ -1,3 +1,2 @@
-(toplevel_expect_tests ())
 
 (jbuild_version jane_street)
