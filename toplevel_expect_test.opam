@@ -11,7 +11,7 @@ build: [
 depends: [
   "core_kernel"
   "findlib_top"
-  "jbuilder"
+  "jbuilder"                {build}
   "ocaml-compiler-libs"
   "ppx_core"
   "ppx_driver"
@@ -19,6 +19,7 @@ depends: [
   "ppx_here"
   "ppx_jane"
   "base-threads"
+  "ocaml-migrate-parsetree"
 ]
 available: [ ocaml-version >= "4.03.0" ]
 descr: "

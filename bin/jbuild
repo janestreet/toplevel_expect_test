@@ -2,7 +2,7 @@
  ((names (main))
   (link_flags (-linkall))
   (libraries (toplevel_expect_test))
-  (preprocess (pps (ppx_jane)))))
+  (preprocess (pps (ppx_jane ppx_driver.runner)))))
 
 (provides
  toplevel_expect_test:main.cmo)
