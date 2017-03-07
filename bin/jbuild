@@ -4,8 +4,6 @@
   (libraries (toplevel_expect_test))
   (preprocess (pps (ppx_jane ppx_driver.runner)))))
 
-(provides
- toplevel_expect_test:main.cmo)
 
 (install
  ((section bin)
