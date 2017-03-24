@@ -425,31 +425,31 @@ let process_expect_file fname ~use_color ~in_place ~sexp_output =
   let result = redirect ~f:(eval_expect_file fname ~file_contents) in
   if sexp_output then begin
     let doc = generate_doc_for_sexp_output ~fname ~file_contents result in
-    Format.printf "%a@." Sexp.pp_hum (T.Document.sexp_of_t doc);
-    true
-  end else begin
-    let corrected_fname = fname ^ ".corrected" in
-    let remove_corrected () =
-      if Sys.file_exists corrected_fname then
-        Sys.remove corrected_fname
-    in
-    match interpret_results_for_diffing ~fname ~file_contents result with
-    | Correction correction ->
-      Matcher.write_corrected [correction]
-        ~file:(if in_place then fname else corrected_fname)
-        ~file_contents ~mode:Toplevel_expect_test;
-      if in_place then begin
-        remove_corrected ();
-        true
-      end else begin
-        Print_diff.print () ~file1:fname ~file2:corrected_fname ~use_color
-          ?diff_command:!diff_command;
-        false
-      end
-    | Match ->
-      if not in_place then remove_corrected ();
+    Format.printf "%a@." Sexp.pp_hum (T.Document.sexp_of_t doc)
+  end;
+  let corrected_fname = fname ^ ".corrected" in
+  let remove_corrected () =
+    if Sys.file_exists corrected_fname then
+      Sys.remove corrected_fname
+  in
+  match interpret_results_for_diffing ~fname ~file_contents result with
+  | Correction correction ->
+    Matcher.write_corrected [correction]
+      ~file:(if in_place then fname else corrected_fname)
+      ~file_contents ~mode:Toplevel_expect_test;
+    if in_place then begin
+      remove_corrected ();
       true
-  end
+    end else begin
+      if not sexp_output then begin
+        Print_diff.print () ~file1:fname ~file2:corrected_fname ~use_color
+          ?diff_command:!diff_command
+      end;
+      false
+    end
+  | Match ->
+    if not in_place then remove_corrected ();
+    true
 ;;
 
 let override_sys_argv args =
