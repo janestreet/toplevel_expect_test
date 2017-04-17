@@ -7,15 +7,15 @@ bug-reports: "https://github.com/janestreet/toplevel_expect_test/issues"
 dev-repo: "git+https://github.com/janestreet/toplevel_expect_test.git"
 license: "Apache-2.0"
 build: [
-  ["jbuilder" "build" "--only-packages" "toplevel_expect_test" "--root" "." "-j" jobs "@install"]
+  ["jbuilder" "build" "-p" name "-j" jobs]
 ]
 depends: [
   "core_kernel"             {>= "v0.9" & < "v0.10"}
   "findlib_top"             {>= "v0.9" & < "v0.10"}
-  "jbuilder"                {build & >= "1.0+beta2"}
+  "jbuilder"                {build & >= "1.0+beta7"}
   "ocaml-compiler-libs"     {>= "v0.9" & < "v0.10"}
   "ppx_core"                {>= "v0.9" & < "v0.10"}
-  "ppx_driver"              {>= "v0.9" & < "v0.10"}
+  "ppx_driver"              {>= "v0.9.1" & < "v0.10"}
   "ppx_expect"              {>= "v0.9" & < "v0.10"}
   "ppx_here"                {>= "v0.9" & < "v0.10"}
   "ppx_jane"                {>= "v0.9" & < "v0.10"}
