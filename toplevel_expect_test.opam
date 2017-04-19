@@ -11,7 +11,7 @@ build: [
 depends: [
   "core_kernel"
   "findlib_top"
-  "jbuilder"                {build & >= "1.0+beta2"}
+  "jbuilder"                {build & >= "1.0+beta8"}
   "ocaml-compiler-libs"
   "ppx_core"
   "ppx_driver"
