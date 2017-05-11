@@ -435,7 +435,9 @@ let generate_doc_for_sexp_output ~fname:_ ~file_contents (results, trailing) =
 
 let diff_command = ref None
 
-let process_expect_file fname ~use_color ~in_place ~sexp_output =
+let process_expect_file fname ~use_color ~in_place ~sexp_output ~use_absolute_path =
+  (* Captures the working directory before running the user code, which might change it *)
+  let cwd = Sys.getcwd () in
   let file_contents = In_channel.read_all fname in
   let result = redirect ~f:(eval_expect_file fname ~file_contents) in
   if sexp_output then begin
@@ -457,7 +459,15 @@ let process_expect_file fname ~use_color ~in_place ~sexp_output =
       true
     end else begin
       if not sexp_output then begin
-        Print_diff.print () ~file1:fname ~file2:corrected_fname ~use_color
+        let maybe_use_absolute_path file =
+          if use_absolute_path
+          then Filename.concat cwd file
+          else file
+        in
+        Print_diff.print ()
+          ~file1:(maybe_use_absolute_path fname)
+          ~file2:(maybe_use_absolute_path corrected_fname)
+          ~use_color
           ?diff_command:!diff_command
       end;
       false
@@ -502,6 +512,7 @@ let setup_config () =
 let use_color   = ref true
 let in_place    = ref false
 let sexp_output = ref false
+let use_absolute_path = ref false
 
 let main fname =
   let cmd_line =
@@ -517,7 +528,7 @@ let main fname =
   Backend.init ();
   let success =
     process_expect_file fname ~use_color:!use_color ~in_place:!in_place
-      ~sexp_output:!sexp_output
+      ~sexp_output:!sexp_output ~use_absolute_path:!use_absolute_path
   in
   exit (if success then 0 else 1)
 ;;
@@ -528,6 +539,7 @@ let args =
     ; "-in-place", Set in_place,    " Overwirte file in place"
     ; "-diff-cmd", String (fun s -> diff_command := Some s), " Diff command"
     ; "-sexp"    , Set sexp_output, " Output the result as a s-expression instead of diffing"
+    ; "-absolute-path", Set use_absolute_path, " Use absolute path in diff-error message"
     ]
 
 let main () =
