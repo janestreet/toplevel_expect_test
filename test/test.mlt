@@ -27,5 +27,5 @@ open Sexplib
 (* Value printing *)
 let x = Sexp.List [Atom "abc"; Atom "42"]
 [%%expect{|
-val x : Type.t = (abc 42)
+val x : Sexp.t = (abc 42)
 |}];;

@@ -129,7 +129,7 @@ let print_loc ppf (loc : Location.t) =
 
 let rec error_reporter ppf ({loc; msg; sub; if_highlight=_} : Location.Error.t) =
   print_loc ppf loc;
-  Format.pp_print_string ppf msg;
+  Format.fprintf ppf "Error: %s" msg;
   List.iter sub ~f:(fun err ->
     Format.fprintf ppf "@\n@[<2>%a@]" error_reporter err)
 ;;
