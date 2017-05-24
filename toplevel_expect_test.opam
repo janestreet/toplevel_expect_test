@@ -11,7 +11,7 @@ build: [
 ]
 depends: [
   "core_kernel"             {>= "v0.9" & < "v0.10"}
-  "findlib_top"             {>= "v0.9" & < "v0.10"}
+  "ocamlfind"               {>= "1.7.2"}
   "jbuilder"                {build & >= "1.0+beta2"}
   "ocaml-compiler-libs"     {>= "v0.9" & < "v0.10"}
   "ppx_core"                {>= "v0.9" & < "v0.10"}
