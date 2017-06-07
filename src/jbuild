@@ -14,7 +14,7 @@
     ppx_expect.matcher
     ocaml-compiler-libs.common
     compiler-libs.common
-    compiler-libs.toplevel findlib_top
+    compiler-libs.toplevel findlib.top
     unix
     threads
     ))
