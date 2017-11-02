@@ -136,8 +136,10 @@ let rec error_reporter ppf ({loc; msg; sub; if_highlight=_} : Location.Error.t) 
 
 let warning_printer loc ppf w =
   if Warnings.is_active w then begin
-    print_loc ppf loc;
-    Format.fprintf ppf "Warning %a@." Warnings.print w
+    !Ocaml_common.Location.warning_printer
+      loc
+      ppf
+      w;
   end
 ;;
 
