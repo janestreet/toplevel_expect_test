@@ -13,6 +13,7 @@
     core_kernel
     ppx_expect.common
     ppx_expect.matcher
+    mlt_parser
     ocaml-compiler-libs.common
     compiler-libs.common
     compiler-libs.toplevel findlib.top

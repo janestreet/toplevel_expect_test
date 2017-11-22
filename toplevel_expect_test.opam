@@ -10,6 +10,7 @@ build: [
 ]
 depends: [
   "core_kernel"
+  "mlt_parser"
   "ocaml-compiler-libs"
   "ppx_core"
   "ppx_driver"

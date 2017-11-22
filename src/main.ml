@@ -3,85 +3,7 @@ open Core_kernel
 open Ppx_core.Light
 open Expect_test_common.Std
 open Expect_test_matcher.Std
-
-let expect =
-  Extension.Expert.declare "expect"
-    Extension.Context.structure_item
-    (Ppx_expect_payload.pattern ())
-    (Ppx_expect_payload.make ~is_exact:false)
-
-let expect_exact =
-  Extension.Expert.declare "expect_exact"
-    Extension.Context.structure_item
-    (Ppx_expect_payload.pattern ())
-    (Ppx_expect_payload.make ~is_exact:true)
-
-let extensions = [expect; expect_exact]
-
-let part_attr =
-  Attribute.Floating.declare "toplevel_expect_test.part"
-    Attribute.Floating.Context.structure_item
-    Ast_pattern.(single_expr_payload (estring __))
-    (fun s -> s)
-
-type chunk =
-  { part        : string
-  ; phrases     : toplevel_phrase list
-  ; expectation : Fmt.t Cst.t Expectation.t
-  ; phrases_loc : Location.t
-  }
-
-let split_chunks ~fname phrases =
-  let rec loop ~loc_start ~part phrases code_acc acc =
-    match phrases with
-    | [] ->
-      if code_acc = [] then
-        (List.rev acc, None)
-      else
-        (List.rev acc, Some (List.rev code_acc, loc_start, part))
-    | phrase :: phrases ->
-      match phrase with
-      | Ptop_def [] -> loop phrases code_acc acc ~loc_start ~part
-      | Ptop_def [{pstr_desc = Pstr_extension(ext, attrs); pstr_loc = loc}] -> begin
-          match Extension.Expert.convert extensions ext ~loc with
-          | None -> loop phrases (phrase :: code_acc) acc ~loc_start ~part
-          | Some f ->
-            assert_no_attributes attrs;
-            let e =
-              { phrases     = List.rev code_acc
-              ; expectation = Expectation.map_pretty (f ~extension_id_loc:(fst ext).loc)
-                                ~f:Lexer.parse_pretty
-              ; phrases_loc =
-                  { loc_start
-                  ; loc_end   = loc.loc_start
-                  ; loc_ghost = false
-                  }
-              ; part
-              }
-            in
-            loop phrases [] (e :: acc) ~loc_start:loc.loc_end ~part
-        end
-      | Ptop_def [{pstr_desc = Pstr_attribute _; pstr_loc = loc} as item] -> begin
-          match Attribute.Floating.convert [part_attr] item with
-          | None -> loop phrases (phrase :: code_acc) acc ~loc_start ~part
-          | Some part ->
-            match code_acc with
-            | _ :: _ ->
-              Location.raise_errorf ~loc
-                "[@@@part ...] cannot appear in the middle of a code block."
-            | [] ->
-              loop phrases [] acc ~loc_start:loc.loc_end ~part
-        end
-      | _ -> loop phrases (phrase :: code_acc) acc ~loc_start ~part
-  in
-  loop phrases [] [] ~part:""
-    ~loc_start:{ Lexing.
-                 pos_fname = fname
-               ; pos_bol   = 0
-               ; pos_cnum  = 0
-               ; pos_lnum  = 1
-               }
-;;
+open Mlt_parser
 
 let parse_contents ~fname contents =
   let lexbuf = Lexing.from_string contents in
@@ -420,7 +342,7 @@ let generate_doc_for_sexp_output ~fname:_ ~file_contents (results, trailing) =
     List.group (List.rev rev_contents) ~break:(fun (a, _) (b, _) -> a <> b)
     |> List.map ~f:(function chunks ->
       { T.Part.
-        name   = fst (List.hd_exn chunks)
+        name = Option.bind (List.hd chunks) ~f:fst |> Option.value ~default:""
       ; chunks = List.map chunks ~f:snd
       })
   in
