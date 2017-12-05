@@ -5,6 +5,8 @@ end
 
 open Compiler_modules
 
+let unsafe_string () = !Clflags.unsafe_string
+
 let init () =
   Topfind.log := ignore;
   Topfind.don't_load_deeply ["toplevel_expect_test"];
