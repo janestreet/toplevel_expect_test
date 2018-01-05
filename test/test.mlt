@@ -1,4 +1,4 @@
-[%%org {x|
+[%%org {|
 #+TITLE: How to Use Toplevel Files
 
 What follows are some simple examples demonstrating how to write a toplevel file. You can
@@ -9,9 +9,9 @@ If you'd like to add markup explaining parts of your toplevel session (like in t
 file), you can embed it in an org-mode block like so:
 
 #+BEGIN_SRC ocaml
-  [%%org {|
+  [%%org {x|
     * This is an org-mode header
-  |}];;
+  |x}];;
 #+END_SRC
 
 Everything within the org block will be ignored by the compiler as if it were a comment.
@@ -21,6 +21,36 @@ Just add it to your jbuild like so:
 #+BEGIN_SRC
   (toplevel_expect_tests ((libraries (ppx_org))))
 #+END_SRC
+
+To get nice syntax highlighting and keybindings for these embedded org-blocks, you'll want
+to enable polymode.
+
+** Enabling Emacs polymode to add org-mode support to .mlt files
+
+1. Add the following lines to your ~/.emacs:
+
+  #+BEGIN_SRC lisp
+  (add-to-list 'load-path "/j/igm/app/emacs/prod/jane-elisp/elisp/contrib/polymode")
+  (add-to-list 'load-path "/j/igm/app/emacs/prod/jane-elisp/elisp/contrib/polymode/modes")
+  (add-to-list 'load-path "/j/igm/app/emacs/dev/jane-elisp/elisp/polymode-modes")
+  (require 'poly-caml)
+  (add-to-list 'auto-mode-alist '("\\.mlt\\'" . poly-caml-mode))
+  #+END_SRC
+
+2. Test that it works by running:
+
+  #+BEGIN_SRC bash
+  emacs lib/toplevel_expect_test/test/test.mlt
+  #+END_SRC
+
+If you move your cursor to the first or last line of an org block, you should notice that
+there's a little alert on the info bar below the buffer saying what kind of buffer you're
+in:
+
+[[./polymode-screenshot.png]]
+
+All the key bindings and stuff should work for each mode. And if you run
+~[C-h v major-mode RET]~ you should see what mode Emacs thinks you're in.
 
 ** Publishing toplevel files to the wiki
 
@@ -38,9 +68,8 @@ because .mlt is now part of Wikipub's ~Standard_formats~:
   ;(wikipub Standard_formats) also works
 #+END_SRC
 
-
 ** Onto the examples!
-|x}];;
+|}];;
 
 [%%org "*** Errors"];;
 let x = 1 + 'e';;
@@ -80,8 +109,8 @@ foo
 |}];;
 
 [%%org "*** Value printing"];;
-open Sexplib
+open Base
 let x = Sexp.List [Atom "abc"; Atom "42"]
 [%%expect{|
-val x : Type.t = (abc 42)
+val x : Sexp.t = (abc 42)
 |}];;
