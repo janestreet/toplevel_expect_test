@@ -11,7 +11,6 @@ build: [
 depends: [
   "core_kernel"
   "mlt_parser"
-  "ocaml-compiler-libs"
   "ppx_core"
   "ppx_driver"
   "ppx_expect"
@@ -19,6 +18,7 @@ depends: [
   "ppx_jane"
   "base-threads"
   "jbuilder"                {build & >= "1.0+beta12"}
+  "ocaml-compiler-libs"     {>= "v0.10.0"}
   "ocaml-migrate-parsetree" {>= "0.4"}
   "ocamlfind"               {>= "1.7.2"}
 ]
