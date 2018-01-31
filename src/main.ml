@@ -174,13 +174,14 @@ let canonicalize_cst : 'a Cst.t -> 'a Cst.t = function
       }
 ;;
 
-let reconcile ~actual ~expect : _ Reconcile.Result.t =
+let reconcile ~actual ~expect ~allow_output_patterns : _ Reconcile.Result.t =
   match
     Reconcile.expectation_body
       ~expect
       ~actual
       ~default_indent:0
       ~pad_single_line:false
+      ~allow_output_patterns
   with
   | Match -> Match
   | Correction c -> Correction (Expectation.Body.map_pretty c ~f:canonicalize_cst)
@@ -218,11 +219,11 @@ type chunk_result =
   | Matched
   | Didn't_match of Fmt.t Cst.t Expectation.Body.t
 
-let eval_expect_file fname ~file_contents ~capture =
+let eval_expect_file fname ~file_contents ~capture ~allow_output_patterns =
   (* 4.03: Warnings.reset_fatal (); *)
   let chunks, trailing_code =
     parse_contents ~fname file_contents
-    |> split_chunks ~fname
+    |> split_chunks ~fname ~allow_output_patterns
   in
   let buf = Buffer.create 1024 in
   let ppf = Format.formatter_of_buffer buf in
@@ -252,7 +253,9 @@ let eval_expect_file fname ~file_contents ~capture =
     capture_compiler_stuff ppf ~f:(fun () ->
       List.map chunks ~f:(fun chunk ->
         let actual = exec_phrases chunk.phrases in
-        match reconcile ~actual ~expect:chunk.expectation.body with
+        match
+          reconcile ~actual ~expect:chunk.expectation.body ~allow_output_patterns
+        with
         | Match -> (chunk, actual, Matched)
         | Correction correction ->
           line_numbers_delta :=
@@ -268,7 +271,8 @@ let eval_expect_file fname ~file_contents ~capture =
       let actual, result =
         capture_compiler_stuff ppf ~f:(fun () ->
           let actual = exec_phrases phrases in
-          (actual, reconcile ~actual ~expect:(Pretty Cst.empty)))
+          (actual, reconcile ~actual ~expect:(Pretty Cst.empty)
+                     ~allow_output_patterns))
       in
       Some (pos_start, actual, result, part)
   in
@@ -357,11 +361,14 @@ let generate_doc_for_sexp_output ~fname:_ ~file_contents (results, trailing) =
 
 let diff_command = ref None
 
-let process_expect_file fname ~use_color ~in_place ~sexp_output ~use_absolute_path =
+let process_expect_file fname ~use_color ~in_place ~sexp_output ~use_absolute_path
+      ~allow_output_patterns =
   (* Captures the working directory before running the user code, which might change it *)
   let cwd = Sys.getcwd () in
   let file_contents = In_channel.read_all fname in
-  let result = redirect ~f:(eval_expect_file fname ~file_contents) in
+  let result =
+    redirect ~f:(eval_expect_file fname ~file_contents ~allow_output_patterns)
+  in
   if sexp_output then begin
     let doc = generate_doc_for_sexp_output ~fname ~file_contents result in
     Format.printf "%a@." Sexp.pp_hum (T.Document.sexp_of_t doc)
@@ -436,6 +443,7 @@ let use_color   = ref true
 let in_place    = ref false
 let sexp_output = ref false
 let use_absolute_path = ref false
+let allow_output_patterns = ref false
 
 let main fname =
   let cmd_line =
@@ -452,6 +460,7 @@ let main fname =
   let success =
     process_expect_file fname ~use_color:!use_color ~in_place:!in_place
       ~sexp_output:!sexp_output ~use_absolute_path:!use_absolute_path
+      ~allow_output_patterns:!allow_output_patterns
   in
   exit (if success then 0 else 1)
 ;;
@@ -463,6 +472,8 @@ let args =
     ; "-diff-cmd", String (fun s -> diff_command := Some s), " Diff command"
     ; "-sexp"    , Set sexp_output, " Output the result as a s-expression instead of diffing"
     ; "-absolute-path", Set use_absolute_path, " Use absolute path in diff-error message"
+    ; "-allow-output-patterns", Set allow_output_patterns,
+      " Allow output patterns in tests expectations";
     ]
 
 let main () =
