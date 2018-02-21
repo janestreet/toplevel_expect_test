@@ -57,13 +57,14 @@ let rec error_reporter ppf ({loc; msg; sub; if_highlight=_} : Location.Error.t) 
 ;;
 
 
+[%%if ocaml_version < (4, 06, 0)]
 let warning_printer loc ppf w =
-#if ocaml_version < (4, 06, 0)
   if Warnings.is_active w then begin
     print_loc ppf loc;
     Format.fprintf ppf "Warning %a@." Warnings.print w
   end
-#else
+[%%else]
+let warning_printer loc ppf w =
   match Warnings.report w with
   | `Inactive -> ()
   | `Active { Warnings. number; message; is_error } ->
@@ -72,7 +73,7 @@ let warning_printer loc ppf w =
     then
       Format.fprintf ppf "Error (Warning %d): %s@." number message
     else Format.fprintf ppf "Warning %d: %s@." number message
-#endif
+[%%endif]
 ;;
 
 type var_and_value = V : 'a ref * 'a -> var_and_value
