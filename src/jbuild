@@ -5,6 +5,7 @@
   (flags (:standard -safe-string))
   (libraries (
     toplevel_expect_test_types
+    ppx_ast
     ppx_core
     ppx_driver
     ppx_expect.payload
@@ -20,7 +21,7 @@
     unix
     threads
     ))
-  (preprocess (pps (ppx_jane ppx_driver.runner)))))
+  (preprocess (pps (ppx_jane ppxlib.runner)))))
 
 
 (jbuild_version 1)
