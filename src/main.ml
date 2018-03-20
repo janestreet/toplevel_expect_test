@@ -1,9 +1,14 @@
+open Ppxlib
 open Backend.Compiler_modules
 open Core_kernel
-open Ppx_core.Light
 open Expect_test_common.Std
 open Expect_test_matcher.Std
 open Mlt_parser
+
+module Clflags  = Ocaml_common.Clflags
+module Compmisc = Ocaml_common.Compmisc
+module Printast = Ocaml_common.Printast
+module Warnings = Ocaml_common.Warnings
 
 let parse_contents ~fname contents =
   let lexbuf = Lexing.from_string contents in
@@ -98,9 +103,9 @@ let capture_compiler_stuff ppf ~f =
 let apply_rewriters = function
   | Ptop_dir _ as x -> x
   | Ptop_def s ->
-    Ptop_def (Ppx_driver.map_structure s
+    Ptop_def (Driver.map_structure s
               |> Migrate_parsetree.Driver.migrate_some_structure
-                   (module Ppx_ast.Selected_ast))
+                   (module Ppxlib_ast.Selected_ast))
 ;;
 
 let verbose = ref false
@@ -130,7 +135,7 @@ let exec_phrase ppf phrase =
     | n -> shift_line_numbers#toplevel_phrase n phrase
   in
   let phrase = apply_rewriters phrase in
-  let module Js = Ppx_ast.Selected_ast in
+  let module Js = Ppxlib_ast.Selected_ast in
   let ocaml_phrase = Js.to_ocaml Toplevel_phrase phrase in
   if !Clflags.dump_parsetree then Printast. top_phrase ppf ocaml_phrase;
   if !Clflags.dump_source    then Pprintast.top_phrase ppf phrase;
@@ -394,7 +399,7 @@ let process_expect_file fname ~use_color ~in_place ~sexp_output ~use_absolute_pa
           then Filename.concat cwd file
           else file
         in
-        Print_diff.print ()
+        Ppxlib_print_diff.print ()
           ~file1:(maybe_use_absolute_path fname)
           ~file2:(maybe_use_absolute_path corrected_fname)
           ~use_color

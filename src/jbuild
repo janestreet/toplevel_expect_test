@@ -5,12 +5,10 @@
   (flags (:standard -safe-string))
   (libraries (
     toplevel_expect_test_types
-    ppx_ast
-    ppx_core
-    ppx_driver
+    ppxlib
+    ppxlib.print_diff
     ppx_expect.payload
     ppx_here.expander
-    ppx_driver.print_diff
     core_kernel
     ppx_expect.common
     ppx_expect.matcher

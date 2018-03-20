@@ -11,9 +11,6 @@ build: [
 depends: [
   "core_kernel"
   "mlt_parser"
-  "ppx_ast"
-  "ppx_core"
-  "ppx_driver"
   "ppx_expect"
   "ppx_here"
   "ppx_jane"
