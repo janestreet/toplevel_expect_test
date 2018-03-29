@@ -1,7 +1,6 @@
 (executables
  ((names (main))
   (link_flags (-linkall))
-  (flags (:standard -safe-string))
   (libraries (toplevel_expect_test))
   (preprocess (pps (ppx_jane ppxlib.runner)))))
 

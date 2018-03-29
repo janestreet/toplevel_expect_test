@@ -2,7 +2,6 @@
  ((name        toplevel_expect_test)
   (public_name toplevel_expect_test)
   (modes (byte))
-  (flags (:standard -safe-string))
   (libraries (
     toplevel_expect_test_types
     ppxlib

@@ -71,8 +71,8 @@ let warning_printer loc ppf w =
 [%%else]
 let warning_printer loc ppf w =
   match Warnings.report w with
-  | `Inactive -> ()
-  | `Active { Warnings. number; message; is_error } ->
+    | `Inactive -> ()
+  | `Active { Warnings. number; message; is_error; sub_locs = _ } ->
     print_loc ppf loc;
     if is_error
     then
