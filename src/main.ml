@@ -208,7 +208,7 @@ let redirect ~f =
     let pos = Unix.lseek fd_out 0 SEEK_CUR in
     let len = pos - !read_up_to in
     read_up_to := pos;
-    Buffer.add_channel buf ic len
+    Caml.Buffer.add_channel buf ic len
   in
   protect ~f:(fun () -> f ~capture)
     ~finally:(fun () ->
