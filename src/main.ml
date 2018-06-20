@@ -291,7 +291,8 @@ let interpret_results_for_diffing ~fname ~file_contents (results, trailing) =
       match result with
       | Matched -> None
       | Didn't_match correction ->
-        Some (chunk.expectation, Matcher.Test_correction.Correction correction))
+        Some (chunk.expectation,
+              Matcher.Test_correction.Node_correction.Correction correction))
   in
   let trailing_output =
     match trailing with
@@ -307,6 +308,7 @@ let interpret_results_for_diffing ~fname ~file_contents (results, trailing) =
               }
     ~corrections
     ~trailing_output
+    ~uncaught_exn:Match
 ;;
 
 module T = Toplevel_expect_test_types
