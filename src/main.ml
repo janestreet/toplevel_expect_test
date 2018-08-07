@@ -145,7 +145,7 @@ let exec_phrase ppf phrase =
 let count_newlines : _ Cst.t Expectation.Body.t -> int =
   let count s = String.count s ~f:(Char.(=) '\n') in
   function
-  | Unreachable -> 0
+  | Unreachable | Output -> 0
   | Exact s -> count s
   | Pretty cst ->
     match cst with
