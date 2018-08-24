@@ -197,7 +197,7 @@ let reconcile ~actual ~expect ~allow_output_patterns : _ Reconcile.Result.t =
 let redirect ~f =
   let stdout_backup = Unix.dup Unix.stdout in
   let stderr_backup = Unix.dup Unix.stderr in
-  let filename = Filename.temp_file "expect-test" "stdout" in
+  let filename = Caml.Filename.temp_file "expect-test" "stdout" in
   let fd_out = Unix.openfile filename [O_WRONLY; O_CREAT; O_TRUNC] 0o600 in
   Unix.dup2 fd_out Unix.stdout;
   Unix.dup2 fd_out Unix.stderr;
