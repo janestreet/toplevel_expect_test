@@ -170,8 +170,7 @@ $ ocaml-expect -sexp test.ml
 ```
 
 You can use the library `toplevel_expect_test.types` to interpret the
-output. You can see the types here
-[here](types/toplevel_expect_test_types.mli).
+output. You can see the types in `types/toplevel_expect_test_types.mli`.
 
 In addition you can add `[@@@part "blah"]` attributes in your code to
 organize it. This gives you an easy way to split the results in
@@ -187,4 +186,3 @@ $ echo 'Toplevel_expect_test.Main.main ()` > main.ml
 $ ocamlfind ocamlc -linkpkg -linkall -predicates create_toploop \
     -package toplevel_expect_test -o foo
 ```
-
