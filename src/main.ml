@@ -240,10 +240,13 @@ let eval_expect_file fname ~file_contents ~capture ~allow_output_patterns =
     (* So that [%expect_exact] nodes look nice *)
     Buffer.add_char buf '\n';
     List.iter phrases ~f:(fun phrase ->
+      let snap = Ocaml_common.Btype.snapshot () in
       match exec_phrase ppf phrase with
       | (_ : bool) -> ()
       | exception exn ->
-        Location.report_exception ppf exn);
+        Location.report_exception ppf exn;
+        Ocaml_common.Btype.backtrack snap
+    );
     Format.pp_print_flush ppf ();
     let len = Buffer.length buf in
     if len > 0 && Buffer.nth buf (len - 1) <> '\n' then
