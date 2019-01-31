@@ -182,7 +182,7 @@ Building a custom toplevel
 You can build a custom toplevel following this example:
 
 ```
-$ echo 'Toplevel_expect_test.Main.main ()` > main.ml
+$ echo 'Toplevel_expect_test.Main.main ()' > main.ml
 $ ocamlfind ocamlc -linkpkg -linkall -predicates create_toploop \
     -package toplevel_expect_test -o foo
 ```
