@@ -1,5 +1,5 @@
 open Ppxlib
-open Backend.Compiler_modules
+open Compiler_modules
 open Core_kernel
 open Expect_test_common.Std
 open Expect_test_matcher.Std
@@ -447,7 +447,7 @@ let setup_config () =
   Clflags.real_paths      := false;
   Clflags.strict_sequence := true;
   Clflags.strict_formats  := true;
-  Clflags.unsafe_string   := Backend.unsafe_string ();
+  Clflags.unsafe_string   := Toplevel_backend.unsafe_string ();
   Warnings.parse_options false "@a-4-29-40-41-42-44-45-48-58";
 ;;
 
@@ -468,7 +468,7 @@ let main fname =
   Compmisc.init_path true;
   Toploop.toplevel_env := Compmisc.initial_env ();
   Sys.interactive := false;
-  Backend.init ();
+  Toplevel_backend.init ~native:true (module Topdirs);
   let success =
     process_expect_file fname ~use_color:!use_color ~in_place:!in_place
       ~sexp_output:!sexp_output ~use_absolute_path:!use_absolute_path
