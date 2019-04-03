@@ -14,7 +14,6 @@ depends: [
   "core_kernel"
   "mlt_parser"
   "ppx_expect"
-  "ppx_here"
   "ppx_inline_test"
   "ppx_jane"
   "toplevel_backend"
