@@ -1,6 +1,7 @@
 open Ppxlib
 open Compiler_modules
 open Core_kernel
+open Poly
 open Expect_test_common.Std
 open Expect_test_matcher.Std
 open Mlt_parser
