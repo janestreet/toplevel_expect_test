@@ -56,7 +56,7 @@ let print_loc ppf (loc : Location.t) =
   Format.fprintf ppf ":@.";
 ;;
 
-let rec error_reporter ppf ({loc; msg; sub; if_highlight=_} : Location.Error.t) =
+let rec error_reporter ppf ({loc; msg; sub; if_highlight=_} : Ocaml_common.Location.error) =
   print_loc ppf loc;
   Format.fprintf ppf "Error: %s" msg;
   List.iter sub ~f:(fun err ->
