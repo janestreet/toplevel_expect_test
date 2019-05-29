@@ -44,6 +44,7 @@ let print_line_number ppf line =
     Format.pp_print_string ppf "_"
 ;;
 
+[%%if ocaml_version < (4, 08, 0)]
 let print_loc ppf (loc : Location.t) =
   let line = loc.loc_start.pos_lnum in
   let startchar = loc.loc_start.pos_cnum - loc.loc_start.pos_bol in
@@ -54,13 +55,13 @@ let print_loc ppf (loc : Location.t) =
   Format.fprintf ppf ":@.";
 ;;
 
-let rec error_reporter ppf ({loc; msg; sub; if_highlight=_} : Location.Error.t) =
+let rec error_reporter ppf ({loc; msg; sub; if_highlight=_} : Ocaml_common.Location.error) =
   print_loc ppf loc;
   Format.fprintf ppf "Error: %s" msg;
   List.iter sub ~f:(fun err ->
     Format.fprintf ppf "@\n@[<2>%a@]" error_reporter err)
 ;;
-
+[%%endif]
 
 [%%if ocaml_version < (4, 06, 0)]
 let warning_printer loc ppf w =
@@ -68,7 +69,7 @@ let warning_printer loc ppf w =
     print_loc ppf loc;
     Format.fprintf ppf "Warning %a@." Warnings.print w
   end
-[%%else]
+[%%elif ocaml_version < (4, 08, 0)]
 let warning_printer loc ppf w =
   match Warnings.report w with
     | `Inactive -> ()
@@ -78,8 +79,26 @@ let warning_printer loc ppf w =
     then
       Format.fprintf ppf "Error (Warning %d): %s@." number message
     else Format.fprintf ppf "Warning %d: %s@." number message
+[%%elif ocaml_version >= (4, 08, 0)]
+let warning_reporter = Ocaml_common.Location.default_warning_reporter
+let alert_reporter = Ocaml_common.Location.default_alert_reporter
 [%%endif]
 ;;
+
+[%%if ocaml_version >= (4, 08, 0)]
+let report_printer () =
+  let printer = Ocaml_common.Location.default_report_printer () in
+  let print_loc _ _report ppf loc =
+    let line = loc.loc_start.pos_lnum in
+    let startchar = loc.loc_start.pos_cnum - loc.loc_start.pos_bol in
+    let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
+    Format.fprintf ppf "Line %a" print_line_number line;
+    if startchar >= 0 then
+      Format.fprintf ppf ", characters %d-%d" startchar endchar;
+    Format.fprintf ppf ":@."
+  in
+  { printer with Ocaml_common.Location.pp_main_loc = print_loc; pp_submsg_loc = print_loc }
+[%%endif]
 
 type var_and_value = V : 'a ref * 'a -> var_and_value
 
@@ -91,6 +110,7 @@ let protect_vars =
     protect ~finally:(fun () -> set_vars backup) ~f
 ;;
 
+[%%if ocaml_version < (4, 08, 0)]
 let capture_compiler_stuff ppf ~f =
   protect_vars
     [ V (Ocaml_common.Location.formatter_for_warnings , ppf            )
@@ -98,6 +118,16 @@ let capture_compiler_stuff ppf ~f =
     ; V (Ocaml_common.Location.error_reporter         , error_reporter )
     ]
     ~f
+[%%else]
+let capture_compiler_stuff ppf ~f =
+  protect_vars
+    [ V (Ocaml_common.Location.formatter_for_warnings , ppf             )
+    ; V (Ocaml_common.Location.warning_reporter       , warning_reporter)
+    ; V (Ocaml_common.Location.report_printer         , report_printer  )
+    ; V (Ocaml_common.Location.alert_reporter         , alert_reporter  )
+    ]
+    ~f
+[%%endif]
 ;;
 
 let apply_rewriters = function
@@ -443,12 +473,18 @@ let setup_env () =
     ; "TERM"        , "xterm"
     ]
 
+[%%if ocaml_version < (4, 08, 0)]
+let warnings = "@a-4-29-40-41-42-44-45-48-58"
+[%%else]
+let warnings = "@a-4-29-40-41-42-44-45-48-58-66"
+[%%endif]
+
 let setup_config () =
   Clflags.real_paths      := false;
   Clflags.strict_sequence := true;
   Clflags.strict_formats  := true;
   Clflags.unsafe_string   := Backend.unsafe_string ();
-  Warnings.parse_options false "@a-4-29-40-41-42-44-45-48-58";
+  Warnings.parse_options false warnings;
 ;;
 
 let use_color   = ref true
