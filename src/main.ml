@@ -98,7 +98,7 @@ let report_printer () =
       Format.fprintf ppf ", characters %d-%d" startchar endchar;
     Format.fprintf ppf ":@."
   in
-  { printer with Ocaml_common.Location.pp_main_loc = print_loc; pp_submsg_loc = print_loc }
+  { printer with Ocaml_common.Location.pp_main_loc = print_loc; pp_submsg_loc = print_loc; }
 [%%endif]
 
 type var_and_value = V : 'a ref * 'a -> var_and_value
