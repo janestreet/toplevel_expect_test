@@ -74,7 +74,7 @@ because .mlt is now part of Wikipub's ~Standard_formats~:
 [%%org "*** Errors"];;
 let x = 1 + 'e';;
 [%%expect{|
-Line _, characters 12-15:
+Line _, characters _-_:
 Error: This expression has type char but an expression was expected of type
          int
 |}];;

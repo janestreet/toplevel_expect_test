@@ -45,6 +45,20 @@ let print_line_number ppf line =
     Format.pp_print_string ppf "_"
 ;;
 
+let print_column_numbers = ref false
+let () =
+  Caml.Hashtbl.add Toploop.directive_table
+    "print_column_numbers"
+    (Directive_bool (fun x -> print_column_numbers := x))
+;;
+
+let print_column_number ppf column =
+  if !print_line_numbers || !print_column_numbers then
+    Format.fprintf ppf "%d" column
+  else
+    Format.pp_print_string ppf "_"
+;;
+
 [%%if ocaml_version < (4, 08, 0)]
 let print_loc ppf (loc : Location.t) =
   let line = loc.loc_start.pos_lnum in
@@ -52,7 +66,9 @@ let print_loc ppf (loc : Location.t) =
   let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
   Format.fprintf ppf "Line %a" print_line_number line;
   if startchar >= 0 then
-    Format.fprintf ppf ", characters %d-%d" startchar endchar;
+    Format.fprintf ppf ", characters %a-%a"
+      print_column_number startchar
+      print_column_number endchar;
   Format.fprintf ppf ":@.";
 ;;
 
@@ -95,7 +111,9 @@ let report_printer () =
     let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
     Format.fprintf ppf "Line %a" print_line_number line;
     if startchar >= 0 then
-      Format.fprintf ppf ", characters %d-%d" startchar endchar;
+      Format.fprintf ppf ", characters %a-%a"
+        print_column_number startchar
+        print_column_number endchar;
     Format.fprintf ppf ":@."
   in
   { printer with Ocaml_common.Location.pp_main_loc = print_loc; pp_submsg_loc = print_loc; }

@@ -45,7 +45,7 @@ let f1 = ffoo foo;;
 
 let f2 = ffoo bar;;
 [%%expect {|
-Line _, characters 14-17:
+Line _, characters _-_:
 Error: This expression has type bar M.t
        but an expression was expected of type foo M.t
        Type bar = [ `Bar ] is not compatible with type foo
@@ -54,10 +54,9 @@ Error: This expression has type bar M.t
 
 let f3 = fbar foo;;
 [%%expect {|
-Line _, characters 14-17:
+Line _, characters _-_:
 Error: This expression has type foo M.t
        but an expression was expected of type bar M.t
        Type foo is not compatible with type bar = [ `Bar ]
        The second variant type does not allow tag(s) `Foo
 |}]
-

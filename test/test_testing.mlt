@@ -11,7 +11,7 @@ rules are not able to infer runtime deps of ppxes in toplevel expect tests.
 let testing = Ppx_inline_test_lib.Runtime.testing;;
 
 [%%expect {|
-Line _, characters 14-49:
+Line _, characters _-_:
 Error: Unbound module Ppx_inline_test_lib
 |}]
 
