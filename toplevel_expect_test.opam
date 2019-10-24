@@ -19,7 +19,7 @@ depends: [
   "ppx_jane"
   "toplevel_backend"
   "base-threads"
-  "dune"                {build & >= "1.5.1"}
+  "dune"                {>= "1.5.1"}
   "ocaml-compiler-libs" {>= "v0.11.0"}
   "ocamlfind"           {>= "1.7.2"}
   "ppxlib"              {>= "0.9.0"}
