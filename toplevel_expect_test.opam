@@ -1,4 +1,5 @@
 opam-version: "2.0"
+version: "v0.13.0"
 maintainer: "opensource@janestreet.com"
 authors: ["Jane Street Group, LLC <opensource@janestreet.com>"]
 homepage: "https://github.com/janestreet/toplevel_expect_test"
@@ -10,14 +11,14 @@ build: [
   ["dune" "build" "-p" name "-j" jobs]
 ]
 depends: [
-  "ocaml" {>= "4.08.0"}
-  "core"
-  "core_kernel"
-  "mlt_parser"
-  "ppx_expect"
-  "ppx_inline_test"
-  "ppx_jane"
-  "toplevel_backend"
+  "ocaml"               {>= "4.08.0"}
+  "core"                {>= "v0.13" & < "v0.14"}
+  "core_kernel"         {>= "v0.13" & < "v0.14"}
+  "mlt_parser"          {>= "v0.13" & < "v0.14"}
+  "ppx_expect"          {>= "v0.13" & < "v0.14"}
+  "ppx_inline_test"     {>= "v0.13" & < "v0.14"}
+  "ppx_jane"            {>= "v0.13" & < "v0.14"}
+  "toplevel_backend"    {>= "v0.13" & < "v0.14"}
   "base-threads"
   "dune"                {>= "1.5.1"}
   "ocaml-compiler-libs" {>= "v0.11.0"}
