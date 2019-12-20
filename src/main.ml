@@ -486,8 +486,10 @@ let setup_env () =
 
 [%%if ocaml_version < (4, 08, 0)]
 let warnings = "@a-4-29-40-41-42-44-45-48-58"
+let enable_all_alerts_as_errors () = ()
 [%%else]
 let warnings = "@a-4-29-40-41-42-44-45-48-58-66"
+let enable_all_alerts_as_errors () = Warnings.parse_alert_option "@all"
 [%%endif]
 
 let setup_config () =
@@ -496,6 +498,7 @@ let setup_config () =
   Clflags.strict_formats  := true;
   Clflags.unsafe_string   := Toplevel_backend.unsafe_string ();
   Warnings.parse_options false warnings;
+  enable_all_alerts_as_errors ();
 ;;
 
 let use_color   = ref true
