@@ -488,7 +488,7 @@ let setup_env () =
 let warnings = "@a-4-29-40-41-42-44-45-48-58"
 let enable_all_alerts_as_errors () = ()
 [%%else]
-let warnings = "@a-4-29-40-41-42-44-45-48-58-66"
+let warnings = "@a-4-29-40-41-42-44-45-48-58-60-66"
 let enable_all_alerts_as_errors () = Warnings.parse_alert_option "@all"
 [%%endif]
 
