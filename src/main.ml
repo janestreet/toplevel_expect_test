@@ -11,6 +11,8 @@ module Compmisc = Ocaml_common.Compmisc
 module Printast = Ocaml_common.Printast
 module Warnings = Ocaml_common.Warnings
 
+module Unix = Caml_unix
+
 let parse_contents ~fname contents =
   let lexbuf = Lexing.from_string contents in
   lexbuf.lex_curr_p <-
