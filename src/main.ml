@@ -2,8 +2,8 @@ open Ppxlib
 open Compiler_modules
 open Core_kernel
 open Poly
-open Expect_test_common.Std
-open Expect_test_matcher.Std
+open Expect_test_common
+open Expect_test_matcher
 open Mlt_parser
 
 module Clflags  = Ocaml_common.Clflags
