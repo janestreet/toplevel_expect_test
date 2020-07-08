@@ -154,9 +154,7 @@ let capture_compiler_stuff ppf ~f =
 let apply_rewriters = function
   | Ptop_dir _ as x -> x
   | Ptop_def s ->
-    Ptop_def (Driver.map_structure s
-              |> Migrate_parsetree.Driver.migrate_some_structure
-                   (module Ppxlib_ast.Selected_ast))
+    Ptop_def (Driver.map_structure s)
 ;;
 
 let verbose = ref false
