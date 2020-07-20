@@ -107,17 +107,32 @@ Error: This expression has type char but an expression was expected of type
 |}]
 ```
 
+You can also enable just column numbers, which change less often due to
+edits in preceding code. Use the directive `#print_column_numbers`:
+
+```ocaml
+#print_column_numbers true;;
+let x = 1 + 2
+[%%expect{|
+Line _, characters 12-15:
+Error: This expression has type char but an expression was expected of type
+         int
+|}]
+```
+
 Sometimes values contains line numbers, either from a ppx rewriter or
 from some special value such as `Pervasives.__LOC__`. Whenever the
 expection before some code capturing the line number changes, the line
 number will change. This can create annoying differences in a test
 suite.
 
-There are two ways to make line numbers predictable:
+There are three ways to make line numbers predictable:
 
 - write tests sensitive on the location in a file with a single
   `[%%expect]` node
 - force the line number with the directive `#reset_line_numbers`
+- force line numbers repeatedly with a single use of the directive
+  `#reset_line_numbers_after_expect`
 
 For instance:
 
@@ -127,8 +142,24 @@ Array.make n 0
 - : int array = [|0; 0; 0; 0; 0; 0; 0; 0; 0; 0|]
 |}]
 
-#reset_line_number;;
+#reset_line_numbers;;
 __LINE__
+[%expect{|
+- : int = 1
+|}]
+```
+
+Or:
+
+```ocaml
+#reset_line_numbers_after_expect true;;
+
+let _ = __LINE__
+[%expect{|
+- : int = 1
+|}]
+
+let _ = __LINE__
 [%expect{|
 - : int = 1
 |}]

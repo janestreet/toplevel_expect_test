@@ -26,11 +26,27 @@ let parse_contents ~fname contents =
 ;;
 
 let reset_line_numbers = ref false
+let reset_line_numbers_after_expect = ref false
 let line_numbers_delta = ref 0
+let start_of_chunk = ref None
+
+let update_line_numbers_delta loc =
+  reset_line_numbers := false;
+  line_numbers_delta := 1 - loc.loc_start.pos_lnum
+;;
+
 let () =
   Caml.Hashtbl.add Toploop.directive_table
     "reset_line_numbers"
     (Directive_none (fun () -> reset_line_numbers := true))
+;;
+
+let () =
+  Caml.Hashtbl.add Toploop.directive_table
+    "reset_line_numbers_after_expect"
+    (Directive_bool (fun x ->
+       reset_line_numbers_after_expect := x;
+       if x then Option.iter !start_of_chunk ~f:update_line_numbers_delta))
 ;;
 
 let print_line_numbers = ref false
@@ -173,11 +189,17 @@ let shift_line_numbers = object
 end
 
 let exec_phrase ppf phrase =
-  if !reset_line_numbers then begin
+  begin
     match phrase with
-    | Ptop_def (st :: _) ->
-      reset_line_numbers := false;
-      line_numbers_delta := 1 - st.pstr_loc.loc_start.pos_lnum
+    | Ptop_def ({ pstr_loc = loc; _ } :: _) ->
+      begin
+        match !start_of_chunk with
+        | Some _ -> ()
+        | None ->
+          start_of_chunk := Some loc;
+          if !reset_line_numbers_after_expect then update_line_numbers_delta loc
+      end;
+      if !reset_line_numbers then update_line_numbers_delta loc;
     | _ -> ()
   end;
   let phrase =
@@ -286,8 +308,11 @@ let eval_expect_file fname ~file_contents ~capture ~allow_output_patterns =
   let buf = Buffer.create 1024 in
   let ppf = Format.formatter_of_buffer buf in
   reset_line_numbers := false;
+  reset_line_numbers_after_expect := false;
   line_numbers_delta := 0;
+  start_of_chunk := None;
   let exec_phrases phrases =
+    start_of_chunk := None;
     (* So that [%expect_exact] nodes look nice *)
     Buffer.add_char buf '\n';
     List.iter phrases ~f:(fun phrase ->
