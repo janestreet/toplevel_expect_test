@@ -289,7 +289,7 @@ let redirect ~f =
       Unix.dup2 stderr_backup Unix.stderr;
       Unix.close stdout_backup;
       Unix.close stderr_backup;
-      Sys.remove filename)
+      Caml.Sys.remove filename)
 ;;
 
 type chunk_result =
@@ -449,7 +449,7 @@ let diff_command = ref None
 let process_expect_file fname ~use_color ~in_place ~sexp_output ~use_absolute_path
       ~allow_output_patterns =
   (* Captures the working directory before running the user code, which might change it *)
-  let cwd = Sys.getcwd () in
+  let cwd = Caml.Sys.getcwd () in
   let file_contents = In_channel.read_all fname in
   let result =
     redirect ~f:(eval_expect_file fname ~file_contents ~allow_output_patterns)
@@ -460,8 +460,8 @@ let process_expect_file fname ~use_color ~in_place ~sexp_output ~use_absolute_pa
   end;
   let corrected_fname = fname ^ ".corrected" in
   let remove_corrected () =
-    if Sys.file_exists corrected_fname then
-      Sys.remove corrected_fname
+    if Caml.Sys.file_exists corrected_fname then
+      Caml.Sys.remove corrected_fname
   in
   match interpret_results_for_diffing ~fname ~file_contents result with
   | Correction correction ->
@@ -542,7 +542,7 @@ let init_path () = Compmisc.init_path ()
 
 let main fname =
   let cmd_line =
-    Array.sub Sys.argv ~pos:!Arg.current ~len:(Array.length Sys.argv - !Arg.current)
+    Array.sub Caml.Sys.argv ~pos:!Arg.current ~len:(Array.length Caml.Sys.argv - !Arg.current)
   in
   setup_env ();
   setup_config ();
@@ -574,7 +574,7 @@ let args =
 let main () =
   let usage =
     Printf.sprintf "Usage: %s [OPTIONS] FILE [ARGS]\n"
-      (Filename.basename Sys.argv.(0))
+      (Filename.basename Caml.Sys.argv.(0))
   in
   try
     Arg.parse args main (usage ^ "\nOptions are:");
