@@ -1,6 +1,6 @@
 open Ppxlib
 open Compiler_modules
-open Core_kernel
+open Core
 open Poly
 open Expect_test_common
 open Expect_test_matcher
@@ -546,7 +546,7 @@ let main fname =
   in
   setup_env ();
   setup_config ();
-  Core.Sys.override_argv cmd_line;
+  Sys_unix.override_argv cmd_line;
   Toploop.set_paths ();
   init_path ();
   Toploop.toplevel_env := Compmisc.initial_env ();
