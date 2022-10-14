@@ -519,11 +519,18 @@ let warnings = "@a-4-29-40-41-42-44-45-48-58-60-66-67"
 let enable_all_alerts_as_errors () = Warnings.parse_alert_option "@all"
 [%%endif]
 
+[%%if ocaml_version >= (5, 0, 0)]
+let set_unsafe_string () = ()
+[%%else]
+let set_unsafe_string () =
+  Clflags.unsafe_string := Toplevel_backend.unsafe_string ()
+[%%endif]
+
 let setup_config () =
   Clflags.real_paths      := false;
   Clflags.strict_sequence := true;
   Clflags.strict_formats  := true;
-  Clflags.unsafe_string   := Toplevel_backend.unsafe_string ();
+  set_unsafe_string ();
   Warnings.parse_options false warnings;
   enable_all_alerts_as_errors ();
 ;;
