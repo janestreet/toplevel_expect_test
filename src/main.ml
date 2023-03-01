@@ -6,6 +6,12 @@ open Expect_test_common
 open Expect_test_matcher
 open Mlt_parser
 
+[%%if host_is_i386]
+
+[@@@ocaml.alert "-deprecated"]
+
+[%%endif]
+
 module Clflags  = Ocaml_common.Clflags
 module Compmisc = Ocaml_common.Compmisc
 module Printast = Ocaml_common.Printast
@@ -36,13 +42,13 @@ let update_line_numbers_delta loc =
 ;;
 
 let () =
-  Caml.Hashtbl.add Toploop.directive_table
+  Stdlib.Hashtbl.add Toploop.directive_table
     "reset_line_numbers"
     (Directive_none (fun () -> reset_line_numbers := true))
 ;;
 
 let () =
-  Caml.Hashtbl.add Toploop.directive_table
+  Stdlib.Hashtbl.add Toploop.directive_table
     "reset_line_numbers_after_expect"
     (Directive_bool (fun x ->
        reset_line_numbers_after_expect := x;
@@ -51,7 +57,7 @@ let () =
 
 let print_line_numbers = ref false
 let () =
-  Caml.Hashtbl.add Toploop.directive_table
+  Stdlib.Hashtbl.add Toploop.directive_table
     "print_line_numbers"
     (Directive_bool (fun x -> print_line_numbers := x))
 ;;
@@ -65,7 +71,7 @@ let print_line_number ppf line =
 
 let print_column_numbers = ref false
 let () =
-  Caml.Hashtbl.add Toploop.directive_table
+  Stdlib.Hashtbl.add Toploop.directive_table
     "print_column_numbers"
     (Directive_bool (fun x -> print_column_numbers := x))
 ;;
@@ -174,7 +180,7 @@ let apply_rewriters = function
 
 let verbose = ref false
 let () =
-  Caml.Hashtbl.add Toploop.directive_table
+  Stdlib.Hashtbl.add Toploop.directive_table
     "verbose"
     (Directive_bool (fun x -> verbose := x))
 ;;
@@ -267,7 +273,7 @@ let reconcile ~actual ~expect ~allow_output_patterns : _ Reconcile.Result.t =
 let redirect ~f =
   let stdout_backup = Unix.dup Unix.stdout in
   let stderr_backup = Unix.dup Unix.stderr in
-  let filename = Caml.Filename.temp_file "expect-test" "stdout" in
+  let filename = Stdlib.Filename.temp_file "expect-test" "stdout" in
   let fd_out = Unix.openfile filename [O_WRONLY; O_CREAT; O_TRUNC] 0o600 in
   Unix.dup2 fd_out Unix.stdout;
   Unix.dup2 fd_out Unix.stderr;
@@ -279,7 +285,7 @@ let redirect ~f =
     let pos = Unix.lseek fd_out 0 SEEK_CUR in
     let len = pos - !read_up_to in
     read_up_to := pos;
-    Caml.Buffer.add_channel buf ic len
+    Stdlib.Buffer.add_channel buf ic len
   in
   protect ~f:(fun () -> f ~capture)
     ~finally:(fun () ->
@@ -289,7 +295,7 @@ let redirect ~f =
       Unix.dup2 stderr_backup Unix.stderr;
       Unix.close stdout_backup;
       Unix.close stderr_backup;
-      Caml.Sys.remove filename)
+      Stdlib.Sys.remove filename)
 ;;
 
 type chunk_result =
@@ -449,7 +455,7 @@ let diff_command = ref None
 let process_expect_file fname ~use_color ~in_place ~sexp_output ~use_absolute_path
       ~allow_output_patterns =
   (* Captures the working directory before running the user code, which might change it *)
-  let cwd = Caml.Sys.getcwd () in
+  let cwd = Stdlib.Sys.getcwd () in
   let file_contents = In_channel.read_all fname in
   let result =
     redirect ~f:(eval_expect_file fname ~file_contents ~allow_output_patterns)
@@ -460,14 +466,17 @@ let process_expect_file fname ~use_color ~in_place ~sexp_output ~use_absolute_pa
   end;
   let corrected_fname = fname ^ ".corrected" in
   let remove_corrected () =
-    if Caml.Sys.file_exists corrected_fname then
-      Caml.Sys.remove corrected_fname
+    if Stdlib.Sys.file_exists corrected_fname then
+      Stdlib.Sys.remove corrected_fname
   in
   match interpret_results_for_diffing ~fname ~file_contents result with
   | Correction correction ->
-    Matcher.write_corrected [correction]
-      ~file:(if in_place then fname else corrected_fname)
-      ~file_contents ~mode:Toplevel_expect_test;
+    let corrected_contents =
+      Matcher.get_contents_for_corrected_file ~file_contents ~mode:Toplevel_expect_test [ correction ]
+    in
+    Out_channel.write_all
+      (if in_place then fname else corrected_fname)
+      ~data:corrected_contents;
     if in_place then begin
       remove_corrected ();
       true
@@ -524,7 +533,8 @@ let setup_config () =
   Clflags.strict_sequence := true;
   Clflags.strict_formats  := true;
   Clflags.unsafe_string   := Toplevel_backend.unsafe_string ();
-  Warnings.parse_options false warnings;
+  Clflags.include_dirs := "+bigarray" :: "+unix" :: !Clflags.include_dirs;
+  let (_ : Warnings.alert option) =  Warnings.parse_options false warnings in
   enable_all_alerts_as_errors ();
 ;;
 
@@ -542,7 +552,7 @@ let init_path () = Compmisc.init_path ()
 
 let main fname =
   let cmd_line =
-    Array.sub Caml.Sys.argv ~pos:!Arg.current ~len:(Array.length Caml.Sys.argv - !Arg.current)
+    Array.sub Stdlib.Sys.argv ~pos:!Arg.current ~len:(Array.length Stdlib.Sys.argv - !Arg.current)
   in
   setup_env ();
   setup_config ();
@@ -574,7 +584,7 @@ let args =
 let main () =
   let usage =
     Printf.sprintf "Usage: %s [OPTIONS] FILE [ARGS]\n"
-      (Filename.basename Caml.Sys.argv.(0))
+      (Filename.basename Stdlib.Sys.argv.(0))
   in
   try
     Arg.parse args main (usage ^ "\nOptions are:");

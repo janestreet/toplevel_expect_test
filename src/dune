@@ -4,4 +4,4 @@
   ppx_expect.common ppx_expect.matcher mlt_parser ocaml-compiler-libs.common
   compiler-libs.common compiler-libs.toplevel findlib.top unix threads
   toplevel_backend ppx_inline_test.runner.lib core_unix.sys_unix)
- (preprocess (pps ppx_jane)))
+ (preprocess (pps ppx_jane ppx_optcomp)))
