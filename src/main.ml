@@ -31,6 +31,8 @@ let parse_contents ~fname contents =
   Parse.use_file lexbuf
 ;;
 
+let make_corrected = ref false
+let suppress_diff_and_errors_for_testing = ref false
 let reset_line_numbers = ref false
 let reset_line_numbers_after_expect = ref false
 let line_numbers_delta = ref 0
@@ -39,6 +41,12 @@ let start_of_chunk = ref None
 let update_line_numbers_delta loc =
   reset_line_numbers := false;
   line_numbers_delta := 1 - loc.loc_start.pos_lnum
+;;
+
+let () =
+  Stdlib.Hashtbl.add Toploop.directive_table
+    "suppress_diff_and_errors_for_testing"
+    (Directive_none (fun () -> suppress_diff_and_errors_for_testing := true))
 ;;
 
 let () =
@@ -460,6 +468,7 @@ let process_expect_file fname ~use_color ~in_place ~sexp_output ~use_absolute_pa
   let result =
     redirect ~f:(eval_expect_file fname ~file_contents ~allow_output_patterns)
   in
+  Stdlib.Sys.chdir cwd;
   if sexp_output then begin
     let doc = generate_doc_for_sexp_output ~fname ~file_contents result in
     Format.printf "%a@." Sexp.pp_hum (T.Document.sexp_of_t doc)
@@ -477,24 +486,23 @@ let process_expect_file fname ~use_color ~in_place ~sexp_output ~use_absolute_pa
     Out_channel.write_all
       (if in_place then fname else corrected_fname)
       ~data:corrected_contents;
-    if in_place then begin
-      remove_corrected ();
-      true
-    end else begin
-      if not sexp_output then begin
-        let maybe_use_absolute_path file =
-          if use_absolute_path
-          then Filename.concat cwd file
-          else file
-        in
-        Ppxlib_print_diff.print ()
-          ~file1:(maybe_use_absolute_path fname)
-          ~file2:(maybe_use_absolute_path corrected_fname)
-          ~use_color
-          ?diff_command:!diff_command
-      end;
-      false
-    end
+    if not in_place && not sexp_output && not !suppress_diff_and_errors_for_testing
+    then begin
+      let maybe_use_absolute_path file =
+        if use_absolute_path
+        then Filename.concat cwd file
+        else file
+      in
+      Ppxlib_print_diff.print ()
+        ~file1:(maybe_use_absolute_path fname)
+        ~file2:(maybe_use_absolute_path corrected_fname)
+        ~use_color
+        ?diff_command:!diff_command
+    end;
+    if not !make_corrected && (in_place || !suppress_diff_and_errors_for_testing)
+    then remove_corrected ();
+    (* Only fail if the rewrite is not in-place and errors are not suppressed. *)
+    in_place || !suppress_diff_and_errors_for_testing
   | Match ->
     if not in_place then remove_corrected ();
     true
@@ -531,9 +539,9 @@ let enable_all_alerts_as_errors () = Warnings.parse_alert_option "@all"
 [%%if ocaml_version >= (5, 0, 0)]
   let set_unsafe_string () = ()
 [%%else]
-  let set_unsafe_string () = 
+  let set_unsafe_string () =
     Clflags.unsafe_string := Toplevel_backend.unsafe_string ()
-[%%endif]  
+[%%endif]
 
 let setup_config () =
   Clflags.real_paths      := false;
@@ -581,6 +589,7 @@ let args =
   Arg.align
     [ "-no-color", Clear use_color, " Produce colored diffs"
     ; "-in-place", Set in_place,    " Overwirte file in place"
+    ; "-make-corrected", Set make_corrected, " Keep the .corrected file, even if [-in-place] is passed"
     ; "-diff-cmd", String (fun s -> diff_command := Some s), " Diff command"
     ; "-sexp"    , Set sexp_output, " Output the result as a s-expression instead of diffing"
     ; "-absolute-path", Set use_absolute_path, " Use absolute path in diff-error message"
