@@ -2,7 +2,7 @@ open Core
 
 module Chunk = struct
   type t =
-    { ocaml_code        : string
+    { ocaml_code : string
     ; toplevel_response : string
     }
   [@@deriving sexp]
@@ -10,7 +10,7 @@ end
 
 module Part = struct
   type t =
-    { name   : string
+    { name : string
     ; chunks : Chunk.t list
     }
   [@@deriving sexp]
@@ -18,7 +18,7 @@ end
 
 module Document = struct
   type t =
-    { parts   : Part.t list
+    { parts : Part.t list
     ; matched : bool
     }
   [@@deriving sexp]

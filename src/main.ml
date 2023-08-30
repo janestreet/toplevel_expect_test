@@ -12,21 +12,15 @@ open Mlt_parser
 
 [%%endif]
 
-module Clflags  = Ocaml_common.Clflags
+module Clflags = Ocaml_common.Clflags
 module Compmisc = Ocaml_common.Compmisc
 module Printast = Ocaml_common.Printast
 module Warnings = Ocaml_common.Warnings
-
 module Unix = Caml_unix
 
 let parse_contents ~fname contents =
   let lexbuf = Lexing.from_string contents in
-  lexbuf.lex_curr_p <-
-    { pos_fname = fname
-    ; pos_lnum  = 1
-    ; pos_bol   = 0
-    ; pos_cnum  = 0
-    };
+  lexbuf.lex_curr_p <- { pos_fname = fname; pos_lnum = 1; pos_bol = 0; pos_cnum = 0 };
   Ocaml_common.Location.input_name := fname;
   Parse.use_file lexbuf
 ;;
@@ -44,97 +38,117 @@ let update_line_numbers_delta loc =
 ;;
 
 let () =
-  Stdlib.Hashtbl.add Toploop.directive_table
+  Stdlib.Hashtbl.add
+    Toploop.directive_table
     "suppress_diff_and_errors_for_testing"
     (Directive_none (fun () -> suppress_diff_and_errors_for_testing := true))
 ;;
 
 let () =
-  Stdlib.Hashtbl.add Toploop.directive_table
+  Stdlib.Hashtbl.add
+    Toploop.directive_table
     "reset_line_numbers"
     (Directive_none (fun () -> reset_line_numbers := true))
 ;;
 
 let () =
-  Stdlib.Hashtbl.add Toploop.directive_table
+  Stdlib.Hashtbl.add
+    Toploop.directive_table
     "reset_line_numbers_after_expect"
-    (Directive_bool (fun x ->
-       reset_line_numbers_after_expect := x;
-       if x then Option.iter !start_of_chunk ~f:update_line_numbers_delta))
+    (Directive_bool
+       (fun x ->
+         reset_line_numbers_after_expect := x;
+         if x then Option.iter !start_of_chunk ~f:update_line_numbers_delta))
 ;;
 
 let print_line_numbers = ref false
+
 let () =
-  Stdlib.Hashtbl.add Toploop.directive_table
+  Stdlib.Hashtbl.add
+    Toploop.directive_table
     "print_line_numbers"
     (Directive_bool (fun x -> print_line_numbers := x))
 ;;
 
 let print_line_number ppf line =
-  if !print_line_numbers then
-    Format.fprintf ppf "%d" line
-  else
-    Format.pp_print_string ppf "_"
+  if !print_line_numbers
+  then Format.fprintf ppf "%d" line
+  else Format.pp_print_string ppf "_"
 ;;
 
 let print_column_numbers = ref false
+
 let () =
-  Stdlib.Hashtbl.add Toploop.directive_table
+  Stdlib.Hashtbl.add
+    Toploop.directive_table
     "print_column_numbers"
     (Directive_bool (fun x -> print_column_numbers := x))
 ;;
 
 let print_column_number ppf column =
-  if !print_line_numbers || !print_column_numbers then
-    Format.fprintf ppf "%d" column
-  else
-    Format.pp_print_string ppf "_"
+  if !print_line_numbers || !print_column_numbers
+  then Format.fprintf ppf "%d" column
+  else Format.pp_print_string ppf "_"
 ;;
 
 [%%if ocaml_version < (4, 08, 0)]
+
 let print_loc ppf (loc : Location.t) =
   let line = loc.loc_start.pos_lnum in
   let startchar = loc.loc_start.pos_cnum - loc.loc_start.pos_bol in
   let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
   Format.fprintf ppf "Line %a" print_line_number line;
-  if startchar >= 0 then
-    Format.fprintf ppf ", characters %a-%a"
-      print_column_number startchar
-      print_column_number endchar;
-  Format.fprintf ppf ":@.";
+  if startchar >= 0
+  then
+    Format.fprintf
+      ppf
+      ", characters %a-%a"
+      print_column_number
+      startchar
+      print_column_number
+      endchar;
+  Format.fprintf ppf ":@."
 ;;
 
-let rec error_reporter ppf ({loc; msg; sub; if_highlight=_} : Ocaml_common.Location.error) =
+let rec error_reporter
+  ppf
+  ({ loc; msg; sub; if_highlight = _ } : Ocaml_common.Location.error)
+  =
   print_loc ppf loc;
   Format.fprintf ppf "Error: %s" msg;
-  List.iter sub ~f:(fun err ->
-    Format.fprintf ppf "@\n@[<2>%a@]" error_reporter err)
+  List.iter sub ~f:(fun err -> Format.fprintf ppf "@\n@[<2>%a@]" error_reporter err)
 ;;
-[%%endif]
 
+[%%endif]
 [%%if ocaml_version < (4, 06, 0)]
+
 let warning_printer loc ppf w =
-  if Warnings.is_active w then begin
+  if Warnings.is_active w
+  then (
     print_loc ppf loc;
-    Format.fprintf ppf "Warning %a@." Warnings.print w
-  end
+    Format.fprintf ppf "Warning %a@." Warnings.print w)
+;;
+
 [%%elif ocaml_version < (4, 08, 0)]
+
 let warning_printer loc ppf w =
   match Warnings.report w with
-    | `Inactive -> ()
-  | `Active { Warnings. number; message; is_error; sub_locs = _ } ->
+  | `Inactive -> ()
+  | `Active { Warnings.number; message; is_error; sub_locs = _ } ->
     print_loc ppf loc;
     if is_error
-    then
-      Format.fprintf ppf "Error (Warning %d): %s@." number message
+    then Format.fprintf ppf "Error (Warning %d): %s@." number message
     else Format.fprintf ppf "Warning %d: %s@." number message
-[%%elif ocaml_version >= (4, 08, 0)]
-let warning_reporter = Ocaml_common.Location.default_warning_reporter
-let alert_reporter = Ocaml_common.Location.default_alert_reporter
-[%%endif]
 ;;
 
+[%%elif ocaml_version >= (4, 08, 0)]
+
+let warning_reporter = Ocaml_common.Location.default_warning_reporter
+let alert_reporter = Ocaml_common.Location.default_alert_reporter
+
+[%%endif]
 [%%if ocaml_version >= (4, 08, 0)]
+
 let report_printer () =
   let printer = Ocaml_common.Location.default_report_printer () in
   let print_loc _ _report ppf loc =
@@ -142,13 +156,23 @@ let report_printer () =
     let startchar = loc.loc_start.pos_cnum - loc.loc_start.pos_bol in
     let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
     Format.fprintf ppf "Line %a" print_line_number line;
-    if startchar >= 0 then
-      Format.fprintf ppf ", characters %a-%a"
-        print_column_number startchar
-        print_column_number endchar;
+    if startchar >= 0
+    then
+      Format.fprintf
+        ppf
+        ", characters %a-%a"
+        print_column_number
+        startchar
+        print_column_number
+        endchar;
     Format.fprintf ppf ":@."
   in
-  { printer with Ocaml_common.Location.pp_main_loc = print_loc; pp_submsg_loc = print_loc; }
+  { printer with
+    Ocaml_common.Location.pp_main_loc = print_loc
+  ; pp_submsg_loc = print_loc
+  }
+;;
+
 [%%endif]
 
 type var_and_value = V : 'a ref * 'a -> var_and_value
@@ -162,24 +186,29 @@ let protect_vars =
 ;;
 
 [%%if ocaml_version < (4, 08, 0)]
+
 let capture_compiler_stuff ppf ~f =
   protect_vars
-    [ V (Ocaml_common.Location.formatter_for_warnings , ppf            )
-    ; V (Ocaml_common.Location.warning_printer        , warning_printer)
-    ; V (Ocaml_common.Location.error_reporter         , error_reporter )
+    [ V (Ocaml_common.Location.formatter_for_warnings, ppf)
+    ; V (Ocaml_common.Location.warning_printer, warning_printer)
+    ; V (Ocaml_common.Location.error_reporter, error_reporter)
     ]
     ~f
-[%%else]
-let capture_compiler_stuff ppf ~f =
-  protect_vars
-    [ V (Ocaml_common.Location.formatter_for_warnings , ppf             )
-    ; V (Ocaml_common.Location.warning_reporter       , warning_reporter)
-    ; V (Ocaml_common.Location.report_printer         , report_printer  )
-    ; V (Ocaml_common.Location.alert_reporter         , alert_reporter  )
-    ]
-    ~f
-[%%endif]
 ;;
+
+[%%else]
+
+let capture_compiler_stuff ppf ~f =
+  protect_vars
+    [ V (Ocaml_common.Location.formatter_for_warnings, ppf)
+    ; V (Ocaml_common.Location.warning_reporter, warning_reporter)
+    ; V (Ocaml_common.Location.report_printer, report_printer)
+    ; V (Ocaml_common.Location.alert_reporter, alert_reporter)
+    ]
+    ~f
+;;
+
+[%%endif]
 
 let apply_rewriters = function
   | Ptop_dir _ as x -> x
@@ -187,32 +216,31 @@ let apply_rewriters = function
 ;;
 
 let verbose = ref false
+
 let () =
-  Stdlib.Hashtbl.add Toploop.directive_table
+  Stdlib.Hashtbl.add
+    Toploop.directive_table
     "verbose"
     (Directive_bool (fun x -> verbose := x))
 ;;
 
-let shift_line_numbers = object
-  inherit [int] Ast_traverse.map_with_context
-  method! position delta pos =
-    { pos with pos_lnum  = pos.pos_lnum + delta }
-end
+let shift_line_numbers =
+  object
+    inherit [int] Ast_traverse.map_with_context
+    method! position delta pos = { pos with pos_lnum = pos.pos_lnum + delta }
+  end
+;;
 
 let exec_phrase ppf phrase =
-  begin
-    match phrase with
-    | Ptop_def ({ pstr_loc = loc; _ } :: _) ->
-      begin
-        match !start_of_chunk with
-        | Some _ -> ()
-        | None ->
-          start_of_chunk := Some loc;
-          if !reset_line_numbers_after_expect then update_line_numbers_delta loc
-      end;
-      if !reset_line_numbers then update_line_numbers_delta loc;
-    | _ -> ()
-  end;
+  (match phrase with
+   | Ptop_def ({ pstr_loc = loc; _ } :: _) ->
+     (match !start_of_chunk with
+      | Some _ -> ()
+      | None ->
+        start_of_chunk := Some loc;
+        if !reset_line_numbers_after_expect then update_line_numbers_delta loc);
+     if !reset_line_numbers then update_line_numbers_delta loc
+   | _ -> ());
   let phrase =
     match !line_numbers_delta with
     | 0 -> phrase
@@ -221,47 +249,39 @@ let exec_phrase ppf phrase =
   let phrase = apply_rewriters phrase in
   let module Js = Ppxlib_ast.Selected_ast in
   let ocaml_phrase = Js.to_ocaml Toplevel_phrase phrase in
-  if !Clflags.dump_parsetree then Printast. top_phrase ppf ocaml_phrase;
-  if !Clflags.dump_source    then Pprintast.top_phrase ppf phrase;
+  if !Clflags.dump_parsetree then Printast.top_phrase ppf ocaml_phrase;
+  if !Clflags.dump_source then Pprintast.top_phrase ppf phrase;
   Toploop.execute_phrase !verbose ppf ocaml_phrase
 ;;
 
 let count_newlines : _ Cst.t Expectation.Body.t -> int =
-  let count s = String.count s ~f:(Char.(=) '\n') in
+  let count s = String.count s ~f:(Char.( = ) '\n') in
   function
   | Unreachable | Output -> 0
   | Exact s -> count s
   | Pretty cst ->
-    match cst with
-    | Empty       e -> count e
-    | Single_line s -> count s.trailing_spaces
-    | Multi_lines m ->
-      List.length m.lines - 1 +
-      count m.leading_spaces  +
-      count m.trailing_spaces
+    (match cst with
+     | Empty e -> count e
+     | Single_line s -> count s.trailing_spaces
+     | Multi_lines m ->
+       List.length m.lines - 1 + count m.leading_spaces + count m.trailing_spaces)
 ;;
 
 let canonicalize_cst : 'a Cst.t -> 'a Cst.t = function
   | Empty _ -> Empty "\n"
   | Single_line s ->
     Multi_lines
-      { leading_spaces  = "\n"
+      { leading_spaces = "\n"
       ; trailing_spaces = "\n"
-      ; indentation     = ""
-      ; lines           =
-          [ Not_blank
-              { trailing_blanks = ""
-              ; orig            = s.orig
-              ; data            = s.data
-              }
-          ]
+      ; indentation = ""
+      ; lines = [ Not_blank { trailing_blanks = ""; orig = s.orig; data = s.data } ]
       }
   | Multi_lines m ->
     Multi_lines
-      { leading_spaces  = "\n"
+      { leading_spaces = "\n"
       ; trailing_spaces = "\n"
-      ; indentation     = ""
-      ; lines           = List.map m.lines ~f:Cst.Line.strip
+      ; indentation = ""
+      ; lines = List.map m.lines ~f:Cst.Line.strip
       }
 ;;
 
@@ -282,7 +302,7 @@ let redirect ~f =
   let stdout_backup = Unix.dup Unix.stdout in
   let stderr_backup = Unix.dup Unix.stderr in
   let filename = Stdlib.Filename.temp_file "expect-test" "stdout" in
-  let fd_out = Unix.openfile filename [O_WRONLY; O_CREAT; O_TRUNC] 0o600 in
+  let fd_out = Unix.openfile filename [ O_WRONLY; O_CREAT; O_TRUNC ] 0o600 in
   Unix.dup2 fd_out Unix.stdout;
   Unix.dup2 fd_out Unix.stderr;
   let ic = In_channel.create filename in
@@ -295,7 +315,8 @@ let redirect ~f =
     read_up_to := pos;
     Stdlib.Buffer.add_channel buf ic len
   in
-  protect ~f:(fun () -> f ~capture)
+  protect
+    ~f:(fun () -> f ~capture)
     ~finally:(fun () ->
       In_channel.close ic;
       Unix.close fd_out;
@@ -313,8 +334,7 @@ type chunk_result =
 let eval_expect_file fname ~file_contents ~capture ~allow_output_patterns =
   (* 4.03: Warnings.reset_fatal (); *)
   let chunks, trailing_code =
-    parse_contents ~fname file_contents
-    |> split_chunks ~fname ~allow_output_patterns
+    parse_contents ~fname file_contents |> split_chunks ~fname ~allow_output_patterns
   in
   let buf = Buffer.create 1024 in
   let ppf = Format.formatter_of_buffer buf in
@@ -332,16 +352,14 @@ let eval_expect_file fname ~file_contents ~capture ~allow_output_patterns =
       | (_ : bool) -> ()
       | exception exn ->
         Location.report_exception ppf exn;
-        Ocaml_common.Btype.backtrack snap
-    );
+        Ocaml_common.Btype.backtrack snap);
     Format.pp_print_flush ppf ();
     let len = Buffer.length buf in
-    if len > 0 && Buffer.nth buf (len - 1) <> '\n' then
-      (* So that [%expect_exact] nodes look nice *)
+    if len > 0 && Buffer.nth buf (len - 1) <> '\n'
+    then (* So that [%expect_exact] nodes look nice *)
       Buffer.add_char buf '\n';
     capture buf;
-    if Buffer.nth buf (len - 1) <> '\n' then
-      Buffer.add_char buf '\n';
+    if Buffer.nth buf (len - 1) <> '\n' then Buffer.add_char buf '\n';
     let s = Buffer.contents buf in
     Buffer.clear buf;
     s
@@ -350,16 +368,14 @@ let eval_expect_file fname ~file_contents ~capture ~allow_output_patterns =
     capture_compiler_stuff ppf ~f:(fun () ->
       List.map chunks ~f:(fun chunk ->
         let actual = exec_phrases chunk.phrases in
-        match
-          reconcile ~actual ~expect:chunk.expectation.body ~allow_output_patterns
-        with
-        | Match -> (chunk, actual, Matched)
+        match reconcile ~actual ~expect:chunk.expectation.body ~allow_output_patterns with
+        | Match -> chunk, actual, Matched
         | Correction correction ->
-          line_numbers_delta :=
-            !line_numbers_delta +
-            count_newlines correction -
-            count_newlines chunk.expectation.body;
-          (chunk, actual, Didn't_match correction)))
+          line_numbers_delta
+            := !line_numbers_delta
+               + count_newlines correction
+               - count_newlines chunk.expectation.body;
+          chunk, actual, Didn't_match correction))
   in
   let trailing =
     match trailing_code with
@@ -368,12 +384,11 @@ let eval_expect_file fname ~file_contents ~capture ~allow_output_patterns =
       let actual, result =
         capture_compiler_stuff ppf ~f:(fun () ->
           let actual = exec_phrases phrases in
-          (actual, reconcile ~actual ~expect:(Pretty Cst.empty)
-                     ~allow_output_patterns))
+          actual, reconcile ~actual ~expect:(Pretty Cst.empty) ~allow_output_patterns)
       in
       Some (pos_start, actual, result, part)
   in
-  (results, trailing)
+  results, trailing
 ;;
 
 let interpret_results_for_diffing ~fname ~file_contents (results, trailing) =
@@ -382,8 +397,9 @@ let interpret_results_for_diffing ~fname ~file_contents (results, trailing) =
       match result with
       | Matched -> None
       | Didn't_match correction ->
-        Some (chunk.expectation,
-              Matcher.Test_correction.Node_correction.Correction correction))
+        Some
+          ( chunk.expectation
+          , Matcher.Test_correction.Node_correction.Correction correction ))
   in
   let trailing_output =
     match trailing with
@@ -391,12 +407,13 @@ let interpret_results_for_diffing ~fname ~file_contents (results, trailing) =
     | Some (_, _, correction, _) -> correction
   in
   Matcher.Test_correction.make
-    ~location:{ filename    = File.Name.of_string fname
-              ; line_number = 1
-              ; line_start  = 0
-              ; start_pos   = 0
-              ; end_pos     = String.length file_contents
-              }
+    ~location:
+      { filename = File.Name.of_string fname
+      ; line_number = 1
+      ; line_start = 0
+      ; start_pos = 0
+      ; end_pos = String.length file_contents
+      }
     ~corrections
     ~trailing_output
     ~uncaught_exn:Match
@@ -407,14 +424,13 @@ module T = Toplevel_expect_test_types
 (* Take a part of a file, trimming spaces at the beginning as well as ';;' *)
 let sub_file file_contents ~start ~stop =
   let rec loop start =
-    if start >= stop then
-      start
-    else
+    if start >= stop
+    then start
+    else (
       match file_contents.[start] with
       | ' ' | '\t' | '\n' -> loop (start + 1)
-      | ';' when start + 1 < stop && file_contents.[start+1] = ';' ->
-        loop (start + 2)
-      | _ -> start
+      | ';' when start + 1 < stop && file_contents.[start + 1] = ';' -> loop (start + 2)
+      | _ -> start)
   in
   let start = loop start in
   String.sub file_contents ~pos:start ~len:(stop - start)
@@ -424,44 +440,56 @@ let generate_doc_for_sexp_output ~fname:_ ~file_contents (results, trailing) =
   let rev_contents =
     List.rev_map results ~f:(fun (chunk, resp, _) ->
       let loc = chunk.phrases_loc in
-      (chunk.part,
-       { T.Chunk.
-         ocaml_code = sub_file file_contents ~start:loc.loc_start.pos_cnum
-                        ~stop:loc.loc_end.pos_cnum
-       ; toplevel_response = resp
-       }))
+      ( chunk.part
+      , { T.Chunk.ocaml_code =
+            sub_file
+              file_contents
+              ~start:loc.loc_start.pos_cnum
+              ~stop:loc.loc_end.pos_cnum
+        ; toplevel_response = resp
+        } ))
   in
   let rev_contents =
     match trailing with
     | None -> rev_contents
     | Some (pos_start, resp, _, part) ->
-      (part,
-       { ocaml_code = sub_file file_contents ~start:pos_start.Lexing.pos_cnum
-                        ~stop:(String.length file_contents)
-       ; toplevel_response = resp
-       }) :: rev_contents
+      ( part
+      , { ocaml_code =
+            sub_file
+              file_contents
+              ~start:pos_start.Lexing.pos_cnum
+              ~stop:(String.length file_contents)
+        ; toplevel_response = resp
+        } )
+      :: rev_contents
   in
   let parts =
     List.group (List.rev rev_contents) ~break:(fun (a, _) (b, _) -> a <> b)
     |> List.map ~f:(function chunks ->
-      { T.Part.
-        name = Option.bind (List.hd chunks) ~f:fst |> Option.value ~default:""
-      ; chunks = List.map chunks ~f:snd
-      })
+         { T.Part.name = Option.bind (List.hd chunks) ~f:fst |> Option.value ~default:""
+         ; chunks = List.map chunks ~f:snd
+         })
   in
   let matched =
-    List.for_all results ~f:(fun (_, _, r) -> r = Matched) &&
+    List.for_all results ~f:(fun (_, _, r) -> r = Matched)
+    &&
     match trailing with
     | None | Some (_, _, Reconcile.Result.Match, _) -> true
     | Some (_, _, Reconcile.Result.Correction _, _) -> false
   in
-  { T.Document. parts; matched }
+  { T.Document.parts; matched }
 ;;
 
 let diff_command = ref None
 
-let process_expect_file fname ~use_color ~in_place ~sexp_output ~use_absolute_path
-      ~allow_output_patterns =
+let process_expect_file
+  fname
+  ~use_color
+  ~in_place
+  ~sexp_output
+  ~use_absolute_path
+  ~allow_output_patterns
+  =
   (* Captures the working directory before running the user code, which might change it *)
   let cwd = Stdlib.Sys.getcwd () in
   let file_contents = In_channel.read_all fname in
@@ -469,37 +497,37 @@ let process_expect_file fname ~use_color ~in_place ~sexp_output ~use_absolute_pa
     redirect ~f:(eval_expect_file fname ~file_contents ~allow_output_patterns)
   in
   Stdlib.Sys.chdir cwd;
-  if sexp_output then begin
+  if sexp_output
+  then (
     let doc = generate_doc_for_sexp_output ~fname ~file_contents result in
-    Format.printf "%a@." Sexp.pp_hum (T.Document.sexp_of_t doc)
-  end;
+    Format.printf "%a@." Sexp.pp_hum (T.Document.sexp_of_t doc));
   let corrected_fname = fname ^ ".corrected" in
   let remove_corrected () =
-    if Stdlib.Sys.file_exists corrected_fname then
-      Stdlib.Sys.remove corrected_fname
+    if Stdlib.Sys.file_exists corrected_fname then Stdlib.Sys.remove corrected_fname
   in
   match interpret_results_for_diffing ~fname ~file_contents result with
   | Correction correction ->
     let corrected_contents =
-      Matcher.get_contents_for_corrected_file ~file_contents ~mode:Toplevel_expect_test [ correction ]
+      Matcher.get_contents_for_corrected_file
+        ~file_contents
+        ~mode:Toplevel_expect_test
+        [ correction ]
     in
     Out_channel.write_all
       (if in_place then fname else corrected_fname)
       ~data:corrected_contents;
-    if not in_place && not sexp_output && not !suppress_diff_and_errors_for_testing
-    then begin
+    if (not in_place) && (not sexp_output) && not !suppress_diff_and_errors_for_testing
+    then (
       let maybe_use_absolute_path file =
-        if use_absolute_path
-        then Filename.concat cwd file
-        else file
+        if use_absolute_path then Filename.concat cwd file else file
       in
-      Ppxlib_print_diff.print ()
+      Ppxlib_print_diff.print
+        ()
         ~file1:(maybe_use_absolute_path fname)
         ~file2:(maybe_use_absolute_path corrected_fname)
         ~use_color
-        ?diff_command:!diff_command
-    end;
-    if not !make_corrected && (in_place || !suppress_diff_and_errors_for_testing)
+        ?diff_command:!diff_command);
+    if (not !make_corrected) && (in_place || !suppress_diff_and_errors_for_testing)
     then remove_corrected ();
     (* Only fail if the rewrite is not in-place and errors are not suppressed. *)
     in_place || !suppress_diff_and_errors_for_testing
@@ -510,64 +538,81 @@ let process_expect_file fname ~use_color ~in_place ~sexp_output ~use_absolute_pa
 
 let setup_env () =
   (* Same as what run-tests.py does, to get repeatable output *)
-  List.iter ~f:(fun (k, v) -> Unix.putenv k v)
-    [ "LANG"        , "C"
-    ; "LC_ALL"      , "C"
-    ; "LANGUAGE"    , "C"
-    ; "TZ"          , "GMT"
-    ; "EMAIL"       , "Foo Bar <foo.bar@example.com>"
-    ; "CDPATH"      , ""
-    ; "COLUMNS"     , "80"
+  List.iter
+    ~f:(fun (k, v) -> Unix.putenv k v)
+    [ "LANG", "C"
+    ; "LC_ALL", "C"
+    ; "LANGUAGE", "C"
+    ; "TZ", "GMT"
+    ; "EMAIL", "Foo Bar <foo.bar@example.com>"
+    ; "CDPATH", ""
+    ; "COLUMNS", "80"
     ; "GREP_OPTIONS", ""
-    ; "http_proxy"  , ""
-    ; "no_proxy"    , ""
-    ; "NO_PROXY"    , ""
-    ; "TERM"        , "xterm"
+    ; "http_proxy", ""
+    ; "no_proxy", ""
+    ; "NO_PROXY", ""
+    ; "TERM", "xterm"
     ]
+;;
 
 [%%if ocaml_version < (4, 08, 0)]
+
 let warnings = "@a-4-29-40-41-42-44-45-48-58"
 let enable_all_alerts_as_errors () = ()
+
 [%%elif ocaml_version < (4, 10, 0)]
+
 let warnings = "@a-4-29-40-41-42-44-45-48-58-60-66"
 let enable_all_alerts_as_errors () = Warnings.parse_alert_option "@all"
+
 [%%else]
+
 let warnings = "@a-4-29-40-41-42-44-45-48-58-60-66-67"
 let enable_all_alerts_as_errors () = Warnings.parse_alert_option "@all"
-[%%endif]
 
+[%%endif]
 [%%if ocaml_version >= (5, 0, 0)]
-  let set_unsafe_string () = ()
+
+let set_unsafe_string () = ()
+
 [%%else]
-  let set_unsafe_string () =
-    Clflags.unsafe_string := Toplevel_backend.unsafe_string ()
+
+let set_unsafe_string () = Clflags.unsafe_string := Toplevel_backend.unsafe_string ()
+
 [%%endif]
 
 let setup_config () =
-  Clflags.real_paths      := false;
+  Clflags.real_paths := false;
   Clflags.strict_sequence := true;
-  Clflags.strict_formats  := true;
+  Clflags.strict_formats := true;
   set_unsafe_string ();
   Clflags.include_dirs := "+bigarray" :: "+unix" :: !Clflags.include_dirs;
-  let (_ : Warnings.alert option) =  Warnings.parse_options false warnings in
-  enable_all_alerts_as_errors ();
+  let (_ : Warnings.alert option) = Warnings.parse_options false warnings in
+  enable_all_alerts_as_errors ()
 ;;
 
-let use_color   = ref true
-let in_place    = ref false
+let use_color = ref true
+let in_place = ref false
 let sexp_output = ref false
 let use_absolute_path = ref false
 let allow_output_patterns = ref false
 
 [%%if ocaml_version < (4, 09, 0)]
+
 let init_path () = Compmisc.init_path true
+
 [%%else]
+
 let init_path () = Compmisc.init_path ()
+
 [%%endif]
 
 let main fname =
   let cmd_line =
-    Array.sub Stdlib.Sys.argv ~pos:!Arg.current ~len:(Array.length Stdlib.Sys.argv - !Arg.current)
+    Array.sub
+      Stdlib.Sys.argv
+      ~pos:!Arg.current
+      ~len:(Array.length Stdlib.Sys.argv - !Arg.current)
   in
   setup_env ();
   setup_config ();
@@ -578,8 +623,12 @@ let main fname =
   Sys.interactive := false;
   Toplevel_backend.init ~native:true (module Topdirs);
   let success =
-    process_expect_file fname ~use_color:!use_color ~in_place:!in_place
-      ~sexp_output:!sexp_output ~use_absolute_path:!use_absolute_path
+    process_expect_file
+      fname
+      ~use_color:!use_color
+      ~in_place:!in_place
+      ~sexp_output:!sexp_output
+      ~use_absolute_path:!use_absolute_path
       ~allow_output_patterns:!allow_output_patterns
   in
   exit (if success then 0 else 1)
@@ -588,25 +637,31 @@ let main fname =
 let args =
   Arg.align
     [ "-no-color", Clear use_color, " Produce colored diffs"
-    ; "-in-place", Set in_place,    " Overwirte file in place"
-    ; "-make-corrected", Set make_corrected, " Keep the .corrected file, even if [-in-place] is passed"
+    ; "-in-place", Set in_place, " Overwirte file in place"
+    ; ( "-make-corrected"
+      , Set make_corrected
+      , " Keep the .corrected file, even if [-in-place] is passed" )
     ; "-diff-cmd", String (fun s -> diff_command := Some s), " Diff command"
-    ; "-sexp"    , Set sexp_output, " Output the result as a s-expression instead of diffing"
+    ; "-sexp", Set sexp_output, " Output the result as a s-expression instead of diffing"
     ; "-absolute-path", Set use_absolute_path, " Use absolute path in diff-error message"
-    ; "-allow-output-patterns", Set allow_output_patterns,
-      " Allow output patterns in tests expectations";
+    ; ( "-allow-output-patterns"
+      , Set allow_output_patterns
+      , " Allow output patterns in tests expectations" )
     ]
+;;
 
 let main () =
   let usage =
-    Printf.sprintf "Usage: %s [OPTIONS] FILE [ARGS]\n"
+    Printf.sprintf
+      "Usage: %s [OPTIONS] FILE [ARGS]\n"
       (Filename.basename Stdlib.Sys.argv.(0))
   in
   try
     Arg.parse args main (usage ^ "\nOptions are:");
     Out_channel.output_string Out_channel.stderr usage;
     exit 2
-  with exn ->
+  with
+  | exn ->
     Location.report_exception Format.err_formatter exn;
     exit 2
 ;;
