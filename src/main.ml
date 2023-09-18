@@ -2,8 +2,7 @@ open Ppxlib
 open Compiler_modules
 open Core
 open Poly
-open Expect_test_common
-open Expect_test_matcher
+open Ppx_expect_runtime
 open Mlt_parser
 
 [%%if host_is_i386]
@@ -254,50 +253,6 @@ let exec_phrase ppf phrase =
   Toploop.execute_phrase !verbose ppf ocaml_phrase
 ;;
 
-let count_newlines : _ Cst.t Expectation.Body.t -> int =
-  let count s = String.count s ~f:(Char.( = ) '\n') in
-  function
-  | Unreachable | Output -> 0
-  | Exact s -> count s
-  | Pretty cst ->
-    (match cst with
-     | Empty e -> count e
-     | Single_line s -> count s.trailing_spaces
-     | Multi_lines m ->
-       List.length m.lines - 1 + count m.leading_spaces + count m.trailing_spaces)
-;;
-
-let canonicalize_cst : 'a Cst.t -> 'a Cst.t = function
-  | Empty _ -> Empty "\n"
-  | Single_line s ->
-    Multi_lines
-      { leading_spaces = "\n"
-      ; trailing_spaces = "\n"
-      ; indentation = ""
-      ; lines = [ Not_blank { trailing_blanks = ""; orig = s.orig; data = s.data } ]
-      }
-  | Multi_lines m ->
-    Multi_lines
-      { leading_spaces = "\n"
-      ; trailing_spaces = "\n"
-      ; indentation = ""
-      ; lines = List.map m.lines ~f:Cst.Line.strip
-      }
-;;
-
-let reconcile ~actual ~expect ~allow_output_patterns : _ Reconcile.Result.t =
-  match
-    Reconcile.expectation_body
-      ~expect
-      ~actual
-      ~default_indent:0
-      ~pad_single_line:false
-      ~allow_output_patterns
-  with
-  | Match -> Match
-  | Correction c -> Correction (Expectation.Body.map_pretty c ~f:canonicalize_cst)
-;;
-
 let redirect ~f =
   let stdout_backup = Unix.dup Unix.stdout in
   let stderr_backup = Unix.dup Unix.stderr in
@@ -327,14 +282,10 @@ let redirect ~f =
       Stdlib.Sys.remove filename)
 ;;
 
-type chunk_result =
-  | Matched
-  | Didn't_match of Fmt.t Cst.t Expectation.Body.t
-
-let eval_expect_file fname ~file_contents ~capture ~allow_output_patterns =
+let eval_expect_file fname ~file_contents ~capture =
   (* 4.03: Warnings.reset_fatal (); *)
   let chunks, trailing_code =
-    parse_contents ~fname file_contents |> split_chunks ~fname ~allow_output_patterns
+    parse_contents ~fname file_contents |> split_chunks ~fname
   in
   let buf = Buffer.create 1024 in
   let ppf = Format.formatter_of_buffer buf in
@@ -364,59 +315,77 @@ let eval_expect_file fname ~file_contents ~capture ~allow_output_patterns =
     Buffer.clear buf;
     s
   in
+  let failure_ref = ref false in
   let results =
     capture_compiler_stuff ppf ~f:(fun () ->
       List.map chunks ~f:(fun chunk ->
         let actual = exec_phrases chunk.phrases in
-        match reconcile ~actual ~expect:chunk.expectation.body ~allow_output_patterns with
-        | Match -> chunk, actual, Matched
-        | Correction correction ->
-          line_numbers_delta
-            := !line_numbers_delta
-               + count_newlines correction
-               - count_newlines chunk.expectation.body;
-          chunk, actual, Didn't_match correction))
+        (match
+           Test_node.For_mlt.record_and_return_number_of_lines_in_correction
+             ~expect_node_formatting
+             ~failure_ref
+             ~test_output_raw:actual
+             chunk.test_node
+         with
+         | None -> ()
+         | Some correction_lines ->
+           let original_lines =
+             let { loc_start = { pos_lnum = start; _ }
+                 ; loc_end = { pos_lnum = end_; _ }
+                 ; loc_ghost = _
+                 }
+               =
+               chunk.test_node_loc
+             in
+             end_ - start + 1
+           in
+           line_numbers_delta := !line_numbers_delta + correction_lines - original_lines);
+        chunk, actual, chunk.test_node))
   in
   let trailing =
     match trailing_code with
     | None -> None
-    | Some (phrases, pos_start, part) ->
-      let actual, result =
+    | Some (phrases, loc_start, part) ->
+      let actual, test_node =
         capture_compiler_stuff ppf ~f:(fun () ->
           let actual = exec_phrases phrases in
-          actual, reconcile ~actual ~expect:(Pretty Cst.empty) ~allow_output_patterns)
+          let trailing_pos =
+            match List.last phrases with
+            | None -> loc_start
+            | Some (Ptop_dir { pdir_loc; _ }) -> pdir_loc.loc_end
+            | Some (Ptop_def structure) -> (List.last_exn structure).pstr_loc.loc_end
+          in
+          let test_node =
+            Test_node.Create.expect
+              { start_bol =
+                  trailing_pos.pos_cnum
+                  (* We let start_bol=start_pos so that the trailing tests get indented
+                   flush with the left margin. *)
+              ; start_pos = trailing_pos.pos_cnum
+              ; end_pos = trailing_pos.pos_cnum
+              }
+              (Payload.default "")
+          in
+          let (_ : int option) =
+            Test_node.For_mlt.record_and_return_number_of_lines_in_correction
+              ~expect_node_formatting
+              ~failure_ref
+              ~test_output_raw:actual
+              test_node
+          in
+          actual, test_node)
       in
-      Some (pos_start, actual, result, part)
+      Some (actual, test_node, part)
   in
-  results, trailing
+  not !failure_ref, results, trailing
 ;;
 
-let interpret_results_for_diffing ~fname ~file_contents (results, trailing) =
-  let corrections =
-    List.filter_map results ~f:(fun (chunk, _, result) ->
-      match result with
-      | Matched -> None
-      | Didn't_match correction ->
-        Some
-          ( chunk.expectation
-          , Matcher.Test_correction.Node_correction.Correction correction ))
-  in
-  let trailing_output =
-    match trailing with
-    | None -> Reconcile.Result.Match
-    | Some (_, _, correction, _) -> correction
-  in
-  Matcher.Test_correction.make
-    ~location:
-      { filename = File.Name.of_string fname
-      ; line_number = 1
-      ; line_start = 0
-      ; start_pos = 0
-      ; end_pos = String.length file_contents
-      }
-    ~corrections
-    ~trailing_output
-    ~uncaught_exn:Match
+let interpret_results_for_diffing (_, results, trailing) =
+  let test_nodes = List.map results ~f:(fun (_, _, test_node) -> test_node) in
+  match trailing with
+  | Some (_, test_node, _) ->
+    Some (Test_node.For_mlt.loc test_node), test_node :: test_nodes
+  | None -> None, test_nodes
 ;;
 
 module T = Toplevel_expect_test_types
@@ -436,7 +405,7 @@ let sub_file file_contents ~start ~stop =
   String.sub file_contents ~pos:start ~len:(stop - start)
 ;;
 
-let generate_doc_for_sexp_output ~fname:_ ~file_contents (results, trailing) =
+let generate_doc_for_sexp_output ~fname:_ ~file_contents (matched, results, trailing) =
   let rev_contents =
     List.rev_map results ~f:(fun (chunk, resp, _) ->
       let loc = chunk.phrases_loc in
@@ -452,12 +421,12 @@ let generate_doc_for_sexp_output ~fname:_ ~file_contents (results, trailing) =
   let rev_contents =
     match trailing with
     | None -> rev_contents
-    | Some (pos_start, resp, _, part) ->
+    | Some (resp, test_node, part) ->
       ( part
       , { ocaml_code =
             sub_file
               file_contents
-              ~start:pos_start.Lexing.pos_cnum
+              ~start:(Test_node.For_mlt.loc test_node).start_pos
               ~stop:(String.length file_contents)
         ; toplevel_response = resp
         } )
@@ -470,70 +439,56 @@ let generate_doc_for_sexp_output ~fname:_ ~file_contents (results, trailing) =
          ; chunks = List.map chunks ~f:snd
          })
   in
-  let matched =
-    List.for_all results ~f:(fun (_, _, r) -> r = Matched)
-    &&
-    match trailing with
-    | None | Some (_, _, Reconcile.Result.Match, _) -> true
-    | Some (_, _, Reconcile.Result.Correction _, _) -> false
-  in
   { T.Document.parts; matched }
 ;;
 
 let diff_command = ref None
 
-let process_expect_file
-  fname
-  ~use_color
-  ~in_place
-  ~sexp_output
-  ~use_absolute_path
-  ~allow_output_patterns
-  =
+let process_expect_file fname ~use_color ~in_place ~sexp_output ~use_absolute_path =
   (* Captures the working directory before running the user code, which might change it *)
   let cwd = Stdlib.Sys.getcwd () in
   let file_contents = In_channel.read_all fname in
-  let result =
-    redirect ~f:(eval_expect_file fname ~file_contents ~allow_output_patterns)
-  in
+  let result = redirect ~f:(eval_expect_file fname ~file_contents) in
   Stdlib.Sys.chdir cwd;
+  if !suppress_diff_and_errors_for_testing then diff_command := Some "-";
   if sexp_output
   then (
     let doc = generate_doc_for_sexp_output ~fname ~file_contents result in
     Format.printf "%a@." Sexp.pp_hum (T.Document.sexp_of_t doc));
-  let corrected_fname = fname ^ ".corrected" in
-  let remove_corrected () =
-    if Stdlib.Sys.file_exists corrected_fname then Stdlib.Sys.remove corrected_fname
+  let result =
+    match
+      interpret_results_for_diffing result
+      |> Write_corrected_file.f
+           ~use_color
+           ~in_place
+           ~diff_command:!diff_command
+           ~diff_path_prefix:(Option.some_if use_absolute_path cwd)
+           ~filename:fname
+           ~with_:(fun ~original_file_contents (trailing_loc, xs) ->
+           List.concat_map
+             xs
+             ~f:
+               (Test_node.For_mlt.to_diffs
+                  ~expect_node_formatting
+                  ~cr_for_multiple_outputs:
+                    Ppx_expect_runtime.For_external.default_cr_for_multiple_outputs
+                  ~original_file_contents)
+           |> List.map ~f:(fun (loc, patch) ->
+                match trailing_loc with
+                | Some trailing_loc when Compact_loc.equal trailing_loc loc ->
+                  (* Make trailing output expect blocks start on a new line. *)
+                  loc, "\n" ^ patch
+                | _ -> loc, patch))
+    with
+    | Success -> true
+    | Failure | Error -> !suppress_diff_and_errors_for_testing
   in
-  match interpret_results_for_diffing ~fname ~file_contents result with
-  | Correction correction ->
-    let corrected_contents =
-      Matcher.get_contents_for_corrected_file
-        ~file_contents
-        ~mode:Toplevel_expect_test
-        [ correction ]
-    in
-    Out_channel.write_all
-      (if in_place then fname else corrected_fname)
-      ~data:corrected_contents;
-    if (not in_place) && (not sexp_output) && not !suppress_diff_and_errors_for_testing
-    then (
-      let maybe_use_absolute_path file =
-        if use_absolute_path then Filename.concat cwd file else file
-      in
-      Ppxlib_print_diff.print
-        ()
-        ~file1:(maybe_use_absolute_path fname)
-        ~file2:(maybe_use_absolute_path corrected_fname)
-        ~use_color
-        ?diff_command:!diff_command);
-    if (not !make_corrected) && (in_place || !suppress_diff_and_errors_for_testing)
-    then remove_corrected ();
-    (* Only fail if the rewrite is not in-place and errors are not suppressed. *)
-    in_place || !suppress_diff_and_errors_for_testing
-  | Match ->
-    if not in_place then remove_corrected ();
-    true
+  let corrected_fname = fname ^ ".corrected" in
+  if !suppress_diff_and_errors_for_testing
+     && (not !make_corrected)
+     && Stdlib.Sys.file_exists corrected_fname
+  then Stdlib.Sys.remove corrected_fname;
+  result
 ;;
 
 let setup_env () =
@@ -595,7 +550,6 @@ let use_color = ref true
 let in_place = ref false
 let sexp_output = ref false
 let use_absolute_path = ref false
-let allow_output_patterns = ref false
 
 [%%if ocaml_version < (4, 09, 0)]
 
@@ -629,7 +583,6 @@ let main fname =
       ~in_place:!in_place
       ~sexp_output:!sexp_output
       ~use_absolute_path:!use_absolute_path
-      ~allow_output_patterns:!allow_output_patterns
   in
   exit (if success then 0 else 1)
 ;;
@@ -644,9 +597,6 @@ let args =
     ; "-diff-cmd", String (fun s -> diff_command := Some s), " Diff command"
     ; "-sexp", Set sexp_output, " Output the result as a s-expression instead of diffing"
     ; "-absolute-path", Set use_absolute_path, " Use absolute path in diff-error message"
-    ; ( "-allow-output-patterns"
-      , Set allow_output_patterns
-      , " Allow output patterns in tests expectations" )
     ]
 ;;
 
