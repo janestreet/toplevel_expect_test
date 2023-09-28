@@ -364,6 +364,7 @@ let eval_expect_file fname ~file_contents ~capture =
               ; start_pos = trailing_pos.pos_cnum
               ; end_pos = trailing_pos.pos_cnum
               }
+              None
               (Payload.default "")
           in
           let (_ : int option) =
