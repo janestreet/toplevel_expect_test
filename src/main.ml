@@ -523,7 +523,7 @@ let enable_all_alerts_as_errors () = Warnings.parse_alert_option "@all"
 
 [%%else]
 
-let warnings = "@a-4-29-40-41-42-44-45-48-58-60-66-67"
+let warnings = "@a-4-29-40-41-42-44-45-48-58-60-66-67-73"
 let enable_all_alerts_as_errors () = Warnings.parse_alert_option "@all"
 
 [%%endif]
@@ -598,6 +598,9 @@ let args =
     ; "-diff-cmd", String (fun s -> diff_command := Some s), " Diff command"
     ; "-sexp", Set sexp_output, " Output the result as a s-expression instead of diffing"
     ; "-absolute-path", Set use_absolute_path, " Use absolute path in diff-error message"
+    ; ( "-extension"
+      , String Language_extension.enable_of_string_exn
+      , " Enable compiler extension" )
     ]
 ;;
 
