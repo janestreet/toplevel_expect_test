@@ -1,4 +1,12 @@
-(executables (names main) (link_flags -linkall)
- (libraries toplevel_expect_test) (preprocess (pps ppx_jane)))
+(executables
+ (modes byte exe)
+ (names main)
+ (link_flags -linkall)
+ (libraries toplevel_expect_test)
+ (preprocess
+  (pps ppx_jane)))
 
-(install (section bin) (files (main.bc as ocaml-expect)))
+(install
+ (section bin)
+ (files
+  (main.bc as ocaml-expect)))
