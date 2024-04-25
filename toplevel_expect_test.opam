@@ -20,7 +20,7 @@ depends: [
   "ppx_optcomp"
   "toplevel_backend"
   "base-threads"
-  "dune"                {>= "2.0.0"}
+  "dune"                {>= "3.11.0"}
   "ocaml-compiler-libs" {>= "v0.11.0"}
   "ocamlfind"           {>= "1.7.2"}
   "ppxlib"              {>= "0.28.0"}
