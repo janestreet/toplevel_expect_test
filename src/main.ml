@@ -2,7 +2,7 @@ open Ppxlib
 open Compiler_modules
 open Core
 open Poly
-open Ppx_expect_runtime
+open Ppx_expect_runtime [@@alert "-ppx_expect_runtime"]
 open Mlt_parser
 
 [%%if host_is_i386]
@@ -440,9 +440,9 @@ let generate_doc_for_sexp_output ~fname:_ ~file_contents (matched, results, trai
   let parts =
     List.group (List.rev rev_contents) ~break:(fun (a, _) (b, _) -> a <> b)
     |> List.map ~f:(function chunks ->
-         { T.Part.name = Option.bind (List.hd chunks) ~f:fst |> Option.value ~default:""
-         ; chunks = List.map chunks ~f:snd
-         })
+      { T.Part.name = Option.bind (List.hd chunks) ~f:fst |> Option.value ~default:""
+      ; chunks = List.map chunks ~f:snd
+      })
   in
   { T.Document.parts; matched }
 ;;
@@ -470,20 +470,21 @@ let process_expect_file fname ~use_color ~in_place ~sexp_output ~use_absolute_pa
            ~diff_path_prefix:(Option.some_if use_absolute_path cwd)
            ~filename:fname
            ~with_:(fun ~original_file_contents (trailing_loc, xs) ->
-           List.concat_map
-             xs
-             ~f:
-               (Test_node.For_mlt.to_diffs
-                  ~expect_node_formatting
-                  ~cr_for_multiple_outputs:
-                    Ppx_expect_runtime.For_external.default_cr_for_multiple_outputs
-                  ~original_file_contents)
-           |> List.map ~f:(fun (loc, patch) ->
-                match trailing_loc with
-                | Some trailing_loc when Compact_loc.equal trailing_loc loc ->
-                  (* Make trailing output expect blocks start on a new line. *)
-                  loc, "\n" ^ patch
-                | _ -> loc, patch))
+             List.concat_map
+               xs
+               ~f:
+                 (Test_node.For_mlt.to_diffs
+                    ~expect_node_formatting
+                    ~cr_for_multiple_outputs:
+                      (Ppx_expect_runtime.For_external.default_cr_for_multiple_outputs [@alert
+                                                                                         "-ppx_expect_runtime"])
+                    ~original_file_contents)
+             |> List.map ~f:(fun (loc, patch) ->
+               match trailing_loc with
+               | Some trailing_loc when Compact_loc.equal trailing_loc loc ->
+                 (* Make trailing output expect blocks start on a new line. *)
+                 loc, "\n" ^ patch
+               | _ -> loc, patch))
     with
     | Success -> true
     | Failure | Error -> !suppress_diff_and_errors_for_testing
@@ -566,6 +567,8 @@ let init_path () = Compmisc.init_path ()
 
 [%%endif]
 
+let set_extension_universe = ignore
+
 let main fname =
   let cmd_line =
     Array.sub
@@ -602,9 +605,9 @@ let args =
     ; "-diff-cmd", String (fun s -> diff_command := Some s), " Diff command"
     ; "-sexp", Set sexp_output, " Output the result as a s-expression instead of diffing"
     ; "-absolute-path", Set use_absolute_path, " Use absolute path in diff-error message"
-    ; ( "-extension"
-      , String Language_extension.enable_of_string_exn
-      , " Enable compiler extension" )
+    ; ( "-extension-universe"
+      , String set_extension_universe
+      , " Set compiler extension universe" )
     ]
 ;;
 

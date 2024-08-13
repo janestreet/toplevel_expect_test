@@ -15,6 +15,7 @@ Error: This expression has type char but an expression was expected of type
 
 Array.init 10 string_of_int
 
-[%%expect {|
+[%%expect
+  {|
 - : bytes array = [|"0"; "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8"; "9"|]
 |}]

@@ -12,6 +12,7 @@ build: [
 depends: [
   "ocaml" {>= "5.1.0"}
   "core"
+  "core_kernel"
   "core_unix"
   "mlt_parser"
   "ppx_expect"
