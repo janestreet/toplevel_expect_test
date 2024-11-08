@@ -567,7 +567,7 @@ let init_path () = Compmisc.init_path ()
 
 [%%endif]
 
-let set_extension_universe = ignore
+let set_extension_universe = Language_extension.set_universe_and_enable_all_of_string_exn
 
 let main fname =
   let cmd_line =
