@@ -250,6 +250,9 @@ let exec_phrase ppf phrase =
   let ocaml_phrase = Js.to_ocaml Toplevel_phrase phrase in
   if !Clflags.dump_parsetree then Printast.top_phrase ppf ocaml_phrase;
   if !Clflags.dump_source then Pprintast.top_phrase ppf phrase;
+  (match ocaml_phrase with
+   | Ptop_dir _ -> ()
+   | Ptop_def str -> Ocaml_common.Ast_invariants.structure str);
   Toploop.execute_phrase !verbose ppf ocaml_phrase
 ;;
 
@@ -318,6 +321,7 @@ let eval_expect_file fname ~file_contents ~capture =
   let failure_ref = ref false in
   let results =
     capture_compiler_stuff ppf ~f:(fun () ->
+      Toplevel_backend.init ~native:true (module Topdirs);
       List.map chunks ~f:(fun chunk ->
         let actual = exec_phrases chunk.phrases in
         (match
@@ -476,8 +480,8 @@ let process_expect_file fname ~use_color ~in_place ~sexp_output ~use_absolute_pa
                  (Test_node.For_mlt.to_diffs
                     ~expect_node_formatting
                     ~cr_for_multiple_outputs:
-                      (Ppx_expect_runtime.For_external.default_cr_for_multiple_outputs [@alert
-                                                                                         "-ppx_expect_runtime"])
+                      (Ppx_expect_runtime.For_external.default_cr_for_multiple_outputs
+                      [@alert "-ppx_expect_runtime"])
                     ~original_file_contents)
              |> List.map ~f:(fun (loc, patch) ->
                match trailing_loc with
@@ -583,7 +587,6 @@ let main fname =
   init_path ();
   Toploop.toplevel_env := Compmisc.initial_env ();
   Sys.interactive := false;
-  Toplevel_backend.init ~native:true (module Topdirs);
   let success =
     process_expect_file
       fname
