@@ -4,13 +4,6 @@ open Core
 open Poly
 open Ppx_expect_runtime [@@alert "-ppx_expect_runtime"]
 open Mlt_parser
-
-[%%if host_is_i386]
-
-[@@@ocaml.alert "-deprecated"]
-
-[%%endif]
-
 module Clflags = Ocaml_common.Clflags
 module Compmisc = Ocaml_common.Compmisc
 module Printast = Ocaml_common.Printast
@@ -90,63 +83,8 @@ let print_column_number ppf column =
   else Format.pp_print_string ppf "_"
 ;;
 
-[%%if ocaml_version < (4, 08, 0)]
-
-let print_loc ppf (loc : Location.t) =
-  let line = loc.loc_start.pos_lnum in
-  let startchar = loc.loc_start.pos_cnum - loc.loc_start.pos_bol in
-  let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
-  Format.fprintf ppf "Line %a" print_line_number line;
-  if startchar >= 0
-  then
-    Format.fprintf
-      ppf
-      ", characters %a-%a"
-      print_column_number
-      startchar
-      print_column_number
-      endchar;
-  Format.fprintf ppf ":@."
-;;
-
-let rec error_reporter
-  ppf
-  ({ loc; msg; sub; if_highlight = _ } : Ocaml_common.Location.error)
-  =
-  print_loc ppf loc;
-  Format.fprintf ppf "Error: %s" msg;
-  List.iter sub ~f:(fun err -> Format.fprintf ppf "@\n@[<2>%a@]" error_reporter err)
-;;
-
-[%%endif]
-[%%if ocaml_version < (4, 06, 0)]
-
-let warning_printer loc ppf w =
-  if Warnings.is_active w
-  then (
-    print_loc ppf loc;
-    Format.fprintf ppf "Warning %a@." Warnings.print w)
-;;
-
-[%%elif ocaml_version < (4, 08, 0)]
-
-let warning_printer loc ppf w =
-  match Warnings.report w with
-  | `Inactive -> ()
-  | `Active { Warnings.number; message; is_error; sub_locs = _ } ->
-    print_loc ppf loc;
-    if is_error
-    then Format.fprintf ppf "Error (Warning %d): %s@." number message
-    else Format.fprintf ppf "Warning %d: %s@." number message
-;;
-
-[%%elif ocaml_version >= (4, 08, 0)]
-
 let warning_reporter = Ocaml_common.Location.default_warning_reporter
 let alert_reporter = Ocaml_common.Location.default_alert_reporter
-
-[%%endif]
-[%%if ocaml_version >= (4, 08, 0)]
 
 let report_printer () =
   let printer = Ocaml_common.Location.default_report_printer () in
@@ -172,8 +110,6 @@ let report_printer () =
   }
 ;;
 
-[%%endif]
-
 type var_and_value = V : 'a ref * 'a -> var_and_value
 
 let protect_vars =
@@ -184,19 +120,6 @@ let protect_vars =
     protect ~finally:(fun () -> set_vars backup) ~f
 ;;
 
-[%%if ocaml_version < (4, 08, 0)]
-
-let capture_compiler_stuff ppf ~f =
-  protect_vars
-    [ V (Ocaml_common.Location.formatter_for_warnings, ppf)
-    ; V (Ocaml_common.Location.warning_printer, warning_printer)
-    ; V (Ocaml_common.Location.error_reporter, error_reporter)
-    ]
-    ~f
-;;
-
-[%%else]
-
 let capture_compiler_stuff ppf ~f =
   protect_vars
     [ V (Ocaml_common.Location.formatter_for_warnings, ppf)
@@ -206,8 +129,6 @@ let capture_compiler_stuff ppf ~f =
     ]
     ~f
 ;;
-
-[%%endif]
 
 let apply_rewriters = function
   | Ptop_dir _ as x -> x
@@ -520,37 +441,13 @@ let setup_env () =
     ]
 ;;
 
-[%%if ocaml_version < (4, 08, 0)]
-
-let warnings = "@a-4-29-40-41-42-44-45-48-58"
-let enable_all_alerts_as_errors () = ()
-
-[%%elif ocaml_version < (4, 10, 0)]
-
-let warnings = "@a-4-29-40-41-42-44-45-48-58-60-66"
-let enable_all_alerts_as_errors () = Warnings.parse_alert_option "@all"
-
-[%%else]
-
 let warnings = "@a-4-29-40-41-42-44-45-48-58-60-66-67-73"
 let enable_all_alerts_as_errors () = Warnings.parse_alert_option "@all"
-
-[%%endif]
-[%%if ocaml_version >= (5, 0, 0)]
-
-let set_unsafe_string () = ()
-
-[%%else]
-
-let set_unsafe_string () = Clflags.unsafe_string := Toplevel_backend.unsafe_string ()
-
-[%%endif]
 
 let setup_config () =
   Clflags.real_paths := false;
   Clflags.strict_sequence := true;
   Clflags.strict_formats := true;
-  set_unsafe_string ();
   Clflags.include_dirs := "+bigarray" :: "+unix" :: !Clflags.include_dirs;
   let (_ : Warnings.alert option) = Warnings.parse_options false warnings in
   enable_all_alerts_as_errors ()
@@ -560,18 +457,11 @@ let use_color = ref true
 let in_place = ref false
 let sexp_output = ref false
 let use_absolute_path = ref false
-
-[%%if ocaml_version < (4, 09, 0)]
-
-let init_path () = Compmisc.init_path true
-
-[%%else]
-
 let init_path () = Compmisc.init_path ()
 
-[%%endif]
-
-let set_extension_universe = Language_extension.set_universe_and_enable_all_of_string_exn
+let set_extension_universe =
+  Ocaml_common.Language_extension.set_universe_and_enable_all_of_string_exn
+;;
 
 let main fname =
   let cmd_line =
