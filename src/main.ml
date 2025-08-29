@@ -425,7 +425,7 @@ let process_expect_file fname ~use_color ~in_place ~sexp_output ~use_absolute_pa
 let setup_env () =
   (* Same as what run-tests.py does, to get repeatable output *)
   List.iter
-    ~f:(fun (k, v) -> Unix.putenv k v)
+    ~f:(fun (k, v) -> (Unix.putenv [@ocaml.alert "-unsafe_multidomain"]) k v)
     [ "LANG", "C"
     ; "LC_ALL", "C"
     ; "LANGUAGE", "C"
