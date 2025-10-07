@@ -239,7 +239,7 @@ let eval_expect_file fname ~file_contents ~capture =
     Buffer.clear buf;
     s
   in
-  let failure_ref = ref false in
+  let failure_atomic = Atomic.make false in
   let results =
     capture_compiler_stuff ppf ~f:(fun () ->
       Toplevel_backend.init ~native:true (module Topdirs);
@@ -248,7 +248,7 @@ let eval_expect_file fname ~file_contents ~capture =
         (match
            Test_node.For_mlt.record_and_return_number_of_lines_in_correction
              ~expect_node_formatting
-             ~failure_ref
+             ~failure_atomic
              ~test_output_raw:actual
              chunk.test_node
          with
@@ -299,7 +299,7 @@ let eval_expect_file fname ~file_contents ~capture =
           let (_ : int option) =
             Test_node.For_mlt.record_and_return_number_of_lines_in_correction
               ~expect_node_formatting
-              ~failure_ref
+              ~failure_atomic
               ~test_output_raw:actual
               test_node
           in
@@ -307,7 +307,7 @@ let eval_expect_file fname ~file_contents ~capture =
       in
       Some (actual, test_node, part)
   in
-  not !failure_ref, results, trailing
+  not (Atomic.get failure_atomic), results, trailing
 ;;
 
 let interpret_results_for_diffing (_, results, trailing) =
@@ -425,7 +425,7 @@ let process_expect_file fname ~use_color ~in_place ~sexp_output ~use_absolute_pa
 let setup_env () =
   (* Same as what run-tests.py does, to get repeatable output *)
   List.iter
-    ~f:(fun (k, v) -> Unix.putenv k v)
+    ~f:(fun (k, v) -> (Unix.putenv [@ocaml.alert "-unsafe_multidomain"]) k v)
     [ "LANG", "C"
     ; "LC_ALL", "C"
     ; "LANGUAGE", "C"
