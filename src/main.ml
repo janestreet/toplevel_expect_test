@@ -282,15 +282,15 @@ let eval_expect_file fname ~file_contents ~capture =
           in
           let test_node =
             Test_node.Create.expect
-            (* We don't care about correcting the "formatting" of the empty string in
-                 the trailing test; therefore, it should be flexible. *)
+            (* We don't care about correcting the "formatting" of the empty string in the
+               trailing test; therefore, it should be flexible. *)
               ~formatting_flexibility:
                 (Expect_node_formatting.Flexibility.Flexible_modulo expect_node_formatting)
               ~node_loc:
                 { start_bol =
                     trailing_pos.pos_cnum
                     (* We let start_bol=start_pos so that the trailing tests get indented
-                   flush with the left margin. *)
+                       flush with the left margin. *)
                 ; start_pos = trailing_pos.pos_cnum
                 ; end_pos = trailing_pos.pos_cnum
                 }
