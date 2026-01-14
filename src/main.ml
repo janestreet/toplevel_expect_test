@@ -438,6 +438,7 @@ let setup_env () =
     ; "no_proxy", ""
     ; "NO_PROXY", ""
     ; "TERM", "xterm"
+    ; "TESTING_FRAMEWORK", "mlt"
     ]
 ;;
 
