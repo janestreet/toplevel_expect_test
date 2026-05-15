@@ -470,6 +470,7 @@ let main fname =
   in
   setup_env ();
   setup_config ();
+  ();
   Sys_unix.override_argv cmd_line;
   Toploop.set_paths ();
   init_path ();
