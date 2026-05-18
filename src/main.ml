@@ -449,7 +449,10 @@ let setup_config () =
   Clflags.real_paths := false;
   Clflags.strict_sequence := true;
   Clflags.strict_formats := true;
-  Clflags.include_dirs := "+bigarray" :: "+unix" :: !Clflags.include_dirs;
+  Clflags.include_dirs
+  := { path = "+bigarray"; cmx_guaranteed = true }
+     :: { path = "+unix"; cmx_guaranteed = true }
+     :: !Clflags.include_dirs;
   let (_ : Warnings.alert option) = Warnings.parse_options false warnings in
   enable_all_alerts_as_errors ()
 ;;
@@ -473,6 +476,7 @@ let main fname =
   in
   setup_env ();
   setup_config ();
+  ();
   Sys_unix.override_argv cmd_line;
   Toploop.set_paths ();
   init_path ();
