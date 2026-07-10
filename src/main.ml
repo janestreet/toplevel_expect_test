@@ -262,7 +262,12 @@ let eval_expect_file fname ~file_contents ~capture =
                =
                chunk.node_loc
              in
-             end_ - start + 1
+             (* One-line blocks have locations that start and end on the same line (so
+                [end_ - start] is [0]), but we still replace the whole line, so
+                [original_lines] is [1]. Other blocks have a [start] that contains just
+                the opening of the expect extension, and the payload starts on the next
+                line, so [end_ - start] is correct. *)
+             Int.max (end_ - start) 1
            in
            line_numbers_delta := !line_numbers_delta + correction_lines - original_lines);
         chunk, actual, chunk.test_node))
