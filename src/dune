@@ -4,8 +4,8 @@
  (modes byte)
  (libraries compiler-libs.toplevel findlib.top ppx_inline_test.runner.lib
    core_kernel.caml_unix core mlt_parser ocaml-compiler-libs.common
-   compiler-libs.common ppx_expect.runtime ppxlib ppxlib.ast
-   core_unix.sys_unix threads toplevel_backend toplevel_expect_test_types
-   unix)
+   ocaml-compiler-libs.frontend compiler-libs.common ppx_expect.runtime
+   ppxlib ppxlib.ast core_unix.sys_unix threads toplevel_backend
+   toplevel_expect_test_types unix)
  (preprocess
-  (pps ppx_jane ppx_optcomp)))
+  (pps ppx_jane ppx_optcomp -compare-require-explicit-locality)))
