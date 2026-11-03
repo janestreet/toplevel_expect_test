@@ -4,8 +4,9 @@ open Core
 open Poly
 open Ppx_expect_runtime [@@alert "-ppx_expect_runtime"]
 open Mlt_parser
+module Ocaml_frontend = Ocaml_common
 module Clflags = Ocaml_common.Clflags
-module Compmisc = Ocaml_common.Compmisc
+module Compmisc = Ocaml_frontend.Compmisc
 module Printast = Ocaml_common.Printast
 module Warnings = Ocaml_common.Warnings
 module Unix = Caml_unix
@@ -222,12 +223,12 @@ let eval_expect_file fname ~file_contents ~capture =
     (* So that [%expect_exact] nodes look nice *)
     Buffer.add_char buf '\n';
     List.iter phrases ~f:(fun phrase ->
-      let snap = Ocaml_common.Btype.snapshot () in
+      let snap = Ocaml_frontend.Btype.snapshot () in
       match exec_phrase ppf phrase with
       | (_ : bool) -> ()
       | exception exn ->
         Location.report_exception ppf exn;
-        Ocaml_common.Btype.backtrack snap);
+        Ocaml_frontend.Btype.backtrack snap);
     Format.pp_print_flush ppf ();
     let len = Buffer.length buf in
     if len > 0 && Buffer.nth buf (len - 1) <> '\n'
@@ -291,15 +292,17 @@ let eval_expect_file fname ~file_contents ~capture =
                trailing test; therefore, it should be flexible. *)
               ~formatting_flexibility:
                 (Expect_node_formatting.Flexibility.Flexible_modulo expect_node_formatting)
-              ~node_loc:
-                { start_bol =
-                    trailing_pos.pos_cnum
-                    (* We let start_bol=start_pos so that the trailing tests get indented
-                       flush with the left margin. *)
-                ; start_pos = trailing_pos.pos_cnum
-                ; end_pos = trailing_pos.pos_cnum
+              ~expect_node_info:
+                { node_loc =
+                    { start_bol =
+                        trailing_pos.pos_cnum
+                        (* We let start_bol=start_pos so that the trailing tests get
+                           indented flush with the left margin. *)
+                    ; start_pos = trailing_pos.pos_cnum
+                    ; end_pos = trailing_pos.pos_cnum
+                    }
+                ; located_payload = None
                 }
-              ~located_payload:None
           in
           let (_ : int option) =
             Test_node.For_mlt.record_and_return_number_of_lines_in_correction
@@ -447,7 +450,7 @@ let setup_env () =
     ]
 ;;
 
-let warnings = "@a-4-29-40-41-42-44-45-48-58-60-66-67-73"
+let warnings = "@a-4-29-40-41-42-44-45-48-58-60-66-67-73-181-211-220"
 let enable_all_alerts_as_errors () = Warnings.parse_alert_option "@all"
 
 let setup_config () =

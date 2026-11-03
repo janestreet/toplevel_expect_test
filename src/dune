@@ -8,4 +8,4 @@
    core_unix.sys_unix threads toplevel_backend toplevel_expect_test_types
    unix)
  (preprocess
-  (pps ppx_jane ppx_optcomp)))
+  (pps ppx_jane ppx_optcomp -compare-require-explicit-locality)))
